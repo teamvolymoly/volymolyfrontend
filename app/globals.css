@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+html {
+  background: #f5f7fb;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+.lead-detail-page button,
+.lead-detail-page select,
+.lead-detail-page input,
+.lead-detail-page textarea {
+  font: inherit;
+}
+
+.deals-page button,
+.deals-page input,
+.deals-page select,
+.deals-page textarea {
+  font: inherit;
+  line-height: 1.25;
+}
+
+.scroll-soft {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.scroll-soft::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.scroll-soft::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-soft::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+.deal-card {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.deal-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.pipeline-scroll {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.pipeline-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  align-items: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.pipeline-stage {
+  min-height: 330px;
+  max-height: min(620px, calc(100vh - 152px));
+}
+
+@media (min-width: 1024px) {
+  .pipeline-board {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    height: 100%;
+  }
+
+  .pipeline-stage {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .pipeline-scroll {
+    padding: 0.625rem;
+  }
+
+  .pipeline-board {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+
+  .pipeline-stage {
+    min-height: 300px;
+    max-height: 520px;
+  }
+}
+
+/* Hide scrollbar until hover */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scroll-thin:hover {
+  scrollbar-color: #d1d5db transparent;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
