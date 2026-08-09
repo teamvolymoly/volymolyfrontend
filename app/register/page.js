@@ -1,4 +1,4 @@
-import AuthPage from "../../components/AuthPage";
+import AuthPanel from "../../components/AuthPanel";
 
 export const metadata = {
   title: "Create account | Volymoly CRM",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function RegisterPage() {
-  return <AuthPage mode="register"/>;
+  return <AuthPanel mode="register"/>;
 }
