@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import LeadDetail from "./LeadDetail";
 import DealsWorkspace from "./DealsWorkspace";
+import SalesNavigation from "./SalesNavigation";
 function MultiSelect({ options, selected, onChange, placeholder = "Select options…" }) {
     const [open, setOpen] = useState(false);
     const [otherDetail, setOtherDetail] = useState("");
@@ -197,67 +198,10 @@ function LeadsIcon({ className = "h-5 w-5" }) {
       <path strokeLinecap="round" strokeLinejoin="round" d="M8 7.5A3.5 3.5 0 1115 7.5a3.5 3.5 0 01-7 0zM4.5 20a6.5 6.5 0 0113 0M18 8v6m-3-3h6"/>
     </svg>);
 }
-function DealsIcon({ className = "h-5 w-5" }) {
-    return (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
-      <circle cx="12" cy="12" r="9"/>
-      <path strokeLinecap="round" d="M14.8 8.7c-.5-.7-1.4-1.1-2.6-1.1-1.5 0-2.6.8-2.6 2s.9 1.7 2.8 2.1c1.9.4 2.8 1 2.8 2.3 0 1.4-1.2 2.4-3 2.4-1.3 0-2.4-.5-3-1.3M12 5.8v12.4"/>
-    </svg>);
-}
-function CrmShell({ currentView, onOpenLeads, onOpenDeals, children, }) {
-    return (<div className="flex h-screen overflow-hidden bg-white text-gray-900">
-      <aside className="flex w-[64px] shrink-0 flex-col items-center border-r border-blue-950 bg-blue-950 text-white">
-        <div className="flex h-14 w-full items-center justify-center border-b border-white/10">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm font-bold text-blue-950 shadow-sm">
-            V
-          </div>
-        </div>
-
-        <nav className="flex w-full flex-1 flex-col items-center gap-2 pt-3" aria-label="Primary navigation">
-          <button type="button" onClick={onOpenLeads} className="group flex w-[52px] flex-col items-center gap-1 rounded-lg bg-blue-600 px-1 py-2 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-blue-500" aria-current="page">
-            <LeadsIcon className="h-5 w-5"/>
-            Leads
-          </button>
-          <button type="button" onClick={onOpenDeals} className="group flex w-[52px] flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-semibold text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
-            <DealsIcon className="h-5 w-5"/>
-            Deals
-          </button>
-        </nav>
-
-        <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[11px] font-semibold">
-          VM
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <button type="button" onClick={onOpenLeads} className="font-medium text-gray-500 transition-colors hover:text-gray-800">
-              Leads
-            </button>
-            <span className="text-gray-300">/</span>
-            <span className="truncate font-semibold text-gray-900">{currentView === "list" ? "Leads Inbox" : "Lead Detail"}</span>
-          </div>
-
-          <div className="hidden w-[320px] items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400 shadow-sm md:flex">
-            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            Search leads
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50" aria-label="Help">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.09 9a3 3 0 115.83 1c0 2-3 2-3 4m.08 4h.01M12 22a10 10 0 100-20 10 10 0 000 20z"/>
-              </svg>
-            </button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">A</div>
-          </div>
-        </header>
-
-        {children}
-      </div>
-    </div>);
+function CrmShell({ activeItem = "leads", onNavigate, children, }) {
+    return (<SalesNavigation activeItem={activeItem} onNavigate={onNavigate} searchPlaceholder="Search leads, contacts or files">
+      {children}
+    </SalesNavigation>);
 }
 // ─── Main Form ────────────────────────────────────────────────────────────────
 function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
@@ -1275,8 +1219,30 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
       </div>
     </div>);
 }
-function LeadDetailPage({ lead, onBack, onArchive, onOpenDeals, }) {
-    return <LeadDetail sourceLead={lead} onBack={onBack} onArchive={onArchive} onOpenDeals={onOpenDeals}/>;
+const placeholderContent = {
+    activities: { title: "Activities", description: "Plan calls, meetings, follow-ups and tasks across your sales pipeline.", accent: "bg-violet-50 text-violet-600" },
+    people: { title: "People", description: "Keep every customer contact and conversation in one organized workspace.", accent: "bg-sky-50 text-sky-600" },
+    organizations: { title: "Organizations", description: "Manage companies, accounts and the people connected to each one.", accent: "bg-emerald-50 text-emerald-600" },
+    merge: { title: "Merge Duplicates", description: "Review matching records and keep your sales data accurate and clean.", accent: "bg-amber-50 text-amber-600" },
+    insights: { title: "Insights", description: "Track pipeline performance, conversion and the activity driving revenue.", accent: "bg-blue-50 text-blue-600" },
+};
+function SalesPlaceholder({ moduleId }) {
+    const content = placeholderContent[moduleId] ?? placeholderContent.people;
+    return (<main className="min-h-0 flex-1 overflow-auto bg-[#f5f7fb] p-5 lg:p-7">
+      <section className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-14 text-center">
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${content.accent}`}>
+            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>
+          </div>
+          <h1 className="mt-5 text-xl font-bold text-slate-900">{content.title}</h1>
+          <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">{content.description}</p>
+          <span className="mt-5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Sales workspace</span>
+        </div>
+      </section>
+    </main>);
+}
+function LeadDetailPage({ lead, onBack, onArchive, onNavigateSales, }) {
+    return <LeadDetail sourceLead={lead} onBack={onBack} onArchive={onArchive} onNavigateSales={onNavigateSales}/>;
 }
 export default function App() {
     const [view, setView] = useState("list");
@@ -1338,23 +1304,25 @@ export default function App() {
         const selected = new Set(leadIds);
         setLeads((current) => current.map((lead) => selected.has(lead.id) ? { ...lead, archived } : lead));
     };
-    const returnToList = () => {
-        setDetailLead(null);
-        setView("list");
-    };
-    const openDeals = () => {
+    const navigateSales = (destination) => {
         setDetailLead(null);
         setEditingLead(null);
         setFormOpen(false);
-        setView("deals");
+        setView(destination === "leads" ? "list" : destination);
     };
+    const returnToList = () => navigateSales("leads");
     if (view === "deals") {
-        return <DealsWorkspace onOpenLeads={returnToList}/>;
+        return <DealsWorkspace onNavigateSales={navigateSales}/>;
     }
     if (view === "detail" && detailLead) {
-        return (<LeadDetailPage lead={detailLead} onBack={returnToList} onArchive={(leadId) => setArchivedForLeads([leadId], true)} onOpenDeals={openDeals}/>);
+        return (<LeadDetailPage lead={detailLead} onBack={returnToList} onArchive={(leadId) => setArchivedForLeads([leadId], true)} onNavigateSales={navigateSales}/>);
     }
-    return (<CrmShell currentView="list" onOpenLeads={returnToList} onOpenDeals={openDeals}>
+    if (placeholderContent[view]) {
+        return (<CrmShell activeItem={view} onNavigate={navigateSales}>
+          <SalesPlaceholder moduleId={view}/>
+        </CrmShell>);
+    }
+    return (<CrmShell activeItem="leads" onNavigate={navigateSales}>
       <LeadsPage leads={leads} onAddLead={openNewLead} onOpenLead={openLeadDetail} onBulkArchive={(leadIds) => setArchivedForLeads(leadIds, true)} onBulkRestore={(leadIds) => setArchivedForLeads(leadIds, false)}/>
 
       {formOpen && (<LeadFormModal onClose={closeForm}>

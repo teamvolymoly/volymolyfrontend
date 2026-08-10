@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import SalesNavigation from "./SalesNavigation";
+import DealDetailReference from "./DealDetailReference";
 const stageDefinitions = [
     { id: "new", name: "New Inquiry", probability: 10, accent: "bg-sky-500" },
     { id: "discovery", name: "Initial Consultation", probability: 30, accent: "bg-indigo-500" },
@@ -170,39 +172,6 @@ function activityClass(state) {
         return "text-blue-700";
     return "text-slate-500";
 }
-function Sidebar({ onOpenLeads }) {
-    return (<aside className="flex w-[64px] shrink-0 flex-col items-center border-r border-blue-950 bg-blue-950 text-white">
-      <div className="flex h-14 w-full items-center justify-center border-b border-white/10">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm font-bold text-blue-950 shadow-sm">V</div>
-      </div>
-      <nav className="flex w-full flex-1 flex-col items-center gap-2 pt-3" aria-label="Primary navigation">
-        <button type="button" onClick={onOpenLeads} className="flex w-[52px] flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-semibold text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
-          <Icon name="leads" className="h-5 w-5"/>
-          Leads
-        </button>
-        <button type="button" className="flex w-[52px] flex-col items-center gap-1 rounded-lg bg-blue-600 px-1 py-2 text-[10px] font-semibold text-white shadow-sm">
-          <Icon name="deals" className="h-5 w-5"/>
-          Deals
-        </button>
-      </nav>
-      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[11px] font-semibold">VM</div>
-    </aside>);
-}
-function Header({ search, setSearch }) {
-    return (<header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-4">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-base font-semibold text-slate-900">Deals</span>
-      </div>
-      <label className="hidden w-[360px] items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 md:flex">
-        <Icon name="search" className="h-4 w-4"/>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search deals, organizations or assignees" className="min-w-0 flex-1 bg-transparent text-slate-800 outline-none placeholder:text-slate-400"/>
-      </label>
-      <div className="flex items-center gap-2">
-        <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50" aria-label="Settings"><Icon name="settings"/></button>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">PS</div>
-      </div>
-    </header>);
-}
 function ViewButton({ active, icon, label, onClick }) {
     return (<button type="button" onClick={onClick} aria-label={`${label} view`} title={label} className={`inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${active ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"}`}>
       <Icon name={icon} className="h-4 w-4 shrink-0"/>
@@ -238,7 +207,7 @@ function SortDropdown({ value, onChange }) {
         </div>)}
     </div>);
 }
-function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode, setSortMode, stageFilter, setStageFilter, ownerFilter, setOwnerFilter, }) {
+function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode, setSortMode, stageFilter, setStageFilter, ownerFilter, setOwnerFilter, selectedCount = 0, onArchiveSelected, }) {
     const filterRef = useRef(null);
     useEffect(() => {
         const close = (event) => {
@@ -254,6 +223,12 @@ function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode
         <ViewButton active={view === "list"} icon="list" label="List" onClick={() => setView("list")}/>
         <ViewButton active={view === "forecast"} icon="forecast" label="Forecast" onClick={() => setView("forecast")}/>
         <ViewButton active={view === "archive"} icon="archive" label="Archive" onClick={() => setView("archive")}/>
+        {view === "list" && selectedCount > 0 && (<>
+          <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden="true"/>
+          <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{selectedCount} selected</span>
+          <button type="button" onClick={onArchiveSelected} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Archive selected deals"><Icon name="archive"/>Archive</button>
+          <button type="button" disabled aria-disabled="true" className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400" title="Delete is locked"><Icon name="trash"/>Delete<Icon name="lock" className="h-3.5 w-3.5"/></button>
+        </>)}
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
         <SortDropdown value={sortMode} onChange={setSortMode}/>
@@ -378,8 +353,13 @@ function PipelineView({ deals, onMove, onOpen }) {
       </div>
     </div>);
 }
-function Checkbox({ checked, onChange, label }) {
-    return <button type="button" onClick={(event) => { event.stopPropagation(); onChange(); }} aria-label={label} className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white"}`}>{checked && <svg className="h-3 w-3" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M2 6l2.5 2.5L10 3"/></svg>}</button>;
+function Checkbox({ checked, indeterminate = false, onChange, label }) {
+    const checkboxRef = useRef(null);
+    useEffect(() => {
+        if (checkboxRef.current)
+            checkboxRef.current.indeterminate = indeterminate;
+    }, [indeterminate]);
+    return <input ref={checkboxRef} type="checkbox" checked={checked} onClick={(event) => event.stopPropagation()} onChange={onChange} aria-label={label} className="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-blue-600"/>;
 }
 const defaultDealColumnOrder = [
     "deal",
@@ -401,8 +381,7 @@ const dealColumnLabels = {
     nextActivity: "Next activity",
     assignedTo: "Assigned to",
 };
-function ListView({ deals, onArchive, onOpen }) {
-    const [selected, setSelected] = useState([]);
+function ListView({ deals, onOpen, selected, setSelected }) {
     const [columnOrder, setColumnOrder] = useState(() => {
         try {
             const saved = window.localStorage.getItem("volymoly-deal-list-column-order-v1");
@@ -428,9 +407,8 @@ function ListView({ deals, onArchive, onOpen }) {
     const settingsRef = useRef(null);
     useEffect(() => {
         // Keep the selection valid when the filtered deal set changes.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelected((current) => current.filter((id) => deals.some((deal) => deal.id === id)));
-    }, [deals]);
+    }, [deals, setSelected]);
     useEffect(() => {
         window.localStorage.setItem("volymoly-deal-list-column-order-v1", JSON.stringify(columnOrder));
     }, [columnOrder]);
@@ -487,28 +465,19 @@ function ListView({ deals, onArchive, onOpen }) {
         }
     };
     return (<div className="flex min-h-0 flex-1 flex-col bg-white">
-      {selected.length > 0 && (<div className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-blue-100 bg-blue-50 px-4 py-1.5">
-          <span className="mr-1 text-xs font-semibold text-blue-700">{selected.length} selected</span>
-          <button type="button" onClick={() => { onArchive(selected); setSelected([]); }} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-blue-200 bg-white px-2.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100">
-            <Icon name="archive"/>
-            Archive
-          </button>
-          <button type="button" disabled className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400" title="Delete is locked">
-            <Icon name="trash"/>
-            Delete
-            <Icon name="lock" className="h-3 w-3"/>
-          </button>
-        </div>)}
-
       <div className="relative min-h-0 flex-1 overflow-auto bg-white">
         <table className="w-full min-w-[1180px] border-collapse text-left">
+          <colgroup>
+            <col className="w-12"/>
+            {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => <col key={column}/>)}
+            <col className="w-12"/>
+          </colgroup>
           <thead className="sticky top-0 z-20 bg-[#f8faff] shadow-[0_1px_0_#e2e8f0]">
             <tr>
-              <th className="h-10 w-12 border-r border-slate-200 px-3 text-center align-middle">
-                <span className="relative inline-flex">
-                  <Checkbox checked={allSelected} onChange={() => setSelected(allSelected ? [] : deals.map((deal) => deal.id))} label="Select all deals"/>
-                  {someSelected && <span className="pointer-events-none absolute left-[3px] top-[7px] h-0.5 w-2.5 rounded bg-blue-600"/>}
-                </span>
+              <th className="h-10 w-12 border-r border-slate-200 p-0 align-middle">
+                <div className="flex h-full w-full items-center justify-center">
+                  <Checkbox checked={allSelected} indeterminate={someSelected} onChange={() => setSelected(allSelected ? [] : deals.map((deal) => deal.id))} label={allSelected ? "Unselect all deals" : "Select all deals"}/>
+                </div>
               </th>
               {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => (<th key={column} draggable onDragStart={() => setDraggedColumn(column)} onDragEnd={() => setDraggedColumn(null)} onDragOver={(event) => event.preventDefault()} onDrop={() => {
                 if (draggedColumn)
@@ -568,8 +537,10 @@ function ListView({ deals, onArchive, onOpen }) {
                         onOpen(deal);
                     }
                 }} tabIndex={0} className={`h-11 cursor-pointer border-b border-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-300 ${isSelected ? "bg-blue-50/70" : "bg-white hover:bg-blue-50/30"}`} aria-label={`Open ${deal.title} deal detail`}>
-                  <td className="w-12 border-r border-slate-200 px-3 text-center align-middle" onClick={(event) => event.stopPropagation()}>
-                    <Checkbox checked={isSelected} onChange={() => toggleDeal(deal.id)} label={`Select ${deal.title}`}/>
+                  <td className="w-12 border-r border-slate-200 p-0 align-middle" onClick={(event) => event.stopPropagation()}>
+                    <div className="flex h-11 w-full items-center justify-center">
+                      <Checkbox checked={isSelected} onChange={() => toggleDeal(deal.id)} label={`Select ${deal.title}`}/>
+                    </div>
                   </td>
                   {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => (<td key={column} className="border-r border-slate-200 px-3 py-2 text-sm align-middle">
                       {renderCell(deal, column)}
@@ -703,25 +674,10 @@ function ArchiveView({ deals, onRestore }) {
       </div>
     </div>);
 }
-function BlankDealPage({ deal, onBack, onOpenLeads }) {
-    return (<div className="deals-page flex h-screen overflow-hidden bg-white text-slate-900">
-      <Sidebar onOpenLeads={onOpenLeads}/>
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
-          <button type="button" onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" aria-label="Back to deals" title="Back to deals">
-            <Icon name="chevron" className="h-4 w-4 rotate-180"/>
-          </button>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">Deal detail</p>
-            <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-sm font-semibold text-slate-900">{deal.title}</h1>
-              <span className="shrink-0 text-xs text-slate-400">{deal.organization}</span>
-            </div>
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 bg-white" aria-label="Blank deal detail workspace"/>
-      </main>
-    </div>);
+function BlankDealPage({ deal, onBack, onNavigateSales }) {
+    return (<SalesNavigation activeItem="deals" onNavigate={onNavigateSales} searchPlaceholder="Search deals, organizations or assignees" avatar="PS">
+      <DealDetailReference key={deal.id} selectedDeal={deal} onBack={onBack}/>
+    </SalesNavigation>);
 }
 function Field({ label, children }) {
     return <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-600">{label}</span>{children}</label>;
@@ -785,7 +741,7 @@ function DealModal({ deal, onClose, onSave }) {
       </form>
     </div>);
 }
-export default function DealsWorkspace({ onOpenLeads = () => {} }) {
+export default function DealsWorkspace({ onNavigateSales = () => {} }) {
     const [view, setView] = useState("list");
     const [deals, setDeals] = useState(initialDeals);
     const [storageHydrated, setStorageHydrated] = useState(false);
@@ -807,6 +763,7 @@ export default function DealsWorkspace({ onOpenLeads = () => {} }) {
     const [stageFilter, setStageFilter] = useState("");
     const [ownerFilter, setOwnerFilter] = useState("");
     const [sortMode, setSortMode] = useState("activity");
+    const [selectedDealIds, setSelectedDealIds] = useState([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingDeal, setEditingDeal] = useState(null);
     const [openedDeal, setOpenedDeal] = useState(null);
@@ -838,6 +795,12 @@ export default function DealsWorkspace({ onOpenLeads = () => {} }) {
         setDeals((current) => current.map((deal) => deal.id === id ? { ...deal, stage, probability } : deal));
     };
     const archiveDeals = (ids) => setDeals((current) => current.map((deal) => ids.includes(deal.id) ? { ...deal, archived: true } : deal));
+    const archiveSelectedDeals = () => {
+        if (!selectedDealIds.length)
+            return;
+        archiveDeals(selectedDealIds);
+        setSelectedDealIds([]);
+    };
     const restoreDeals = (ids) => setDeals((current) => current.map((deal) => ids.includes(deal.id) ? { ...deal, archived: false } : deal));
     const saveDeal = (newDeal, id) => {
         if (id) {
@@ -851,18 +814,16 @@ export default function DealsWorkspace({ onOpenLeads = () => {} }) {
     };
     const openEdit = (deal) => { setEditingDeal(deal); setModalOpen(true); };
     if (openedDeal) {
-        return <BlankDealPage deal={openedDeal} onBack={() => setOpenedDeal(null)} onOpenLeads={onOpenLeads}/>;
+        return <BlankDealPage deal={openedDeal} onBack={() => setOpenedDeal(null)} onNavigateSales={onNavigateSales}/>;
     }
-    return (<div className="deals-page flex h-screen overflow-hidden bg-white text-slate-900">
-      <Sidebar onOpenLeads={onOpenLeads}/>
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <Header search={search} setSearch={setSearch}/>
-        <Toolbar view={view} setView={setView} onAddDeal={() => { setEditingDeal(null); setModalOpen(true); }} filterOpen={filterOpen} setFilterOpen={setFilterOpen} sortMode={sortMode} setSortMode={setSortMode} stageFilter={stageFilter} setStageFilter={setStageFilter} ownerFilter={ownerFilter} setOwnerFilter={setOwnerFilter}/>
+    return (<SalesNavigation activeItem="deals" onNavigate={onNavigateSales} searchPlaceholder="Search deals, organizations or assignees" searchValue={search} onSearchChange={setSearch} avatar="PS">
+      <main className="deals-page flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Toolbar view={view} setView={(nextView) => { setView(nextView); setSelectedDealIds([]); }} onAddDeal={() => { setEditingDeal(null); setModalOpen(true); }} filterOpen={filterOpen} setFilterOpen={setFilterOpen} sortMode={sortMode} setSortMode={setSortMode} stageFilter={stageFilter} setStageFilter={setStageFilter} ownerFilter={ownerFilter} setOwnerFilter={setOwnerFilter} selectedCount={selectedDealIds.length} onArchiveSelected={archiveSelectedDeals}/>
         {view === "pipeline" && <PipelineView deals={activeDeals} onMove={moveDeal} onOpen={setOpenedDeal}/>}
-        {view === "list" && <ListView deals={activeDeals} onArchive={archiveDeals} onOpen={setOpenedDeal}/>}
+        {view === "list" && <ListView deals={activeDeals} onOpen={setOpenedDeal} selected={selectedDealIds} setSelected={setSelectedDealIds}/>}
         {view === "forecast" && <ForecastView deals={activeDeals} onEdit={openEdit}/>}
         {view === "archive" && <ArchiveView deals={archivedDeals} onRestore={restoreDeals}/>}
       </main>
       {modalOpen && <DealModal deal={editingDeal} onClose={() => { setModalOpen(false); setEditingDeal(null); }} onSave={saveDeal}/>}
-    </div>);
+    </SalesNavigation>);
 }

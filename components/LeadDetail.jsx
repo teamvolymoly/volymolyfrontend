@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import SalesNavigation from "./SalesNavigation";
 const tabs = ["Overview", "Project Information", "Activity", "Notes", "Files", "More", "AI Summary"];
 const statusOptions = ["New", "Contacted", "Qualified", "Proposal Sent", "Negotiation", "Won", "Lost"];
 const fallbackLead = {
@@ -709,7 +710,7 @@ function mapLeadRecord(sourceLead) {
     };
 }
 
-export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = () => {}, onOpenDeals = () => {} }) {
+export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = () => {}, onNavigateSales = () => {} }) {
     const initialLead = useMemo(() => mapLeadRecord(sourceLead), [sourceLead]);
     const [activeTab, setActiveTab] = useState("Overview");
     const [lead, setLead] = useState(initialLead);
@@ -1332,28 +1333,8 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
         </Card>
       </div>);
     }
-  return (<div className="lead-detail-page min-h-screen bg-[#f5f7fb] text-slate-800">
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-[72px] flex-col items-center border-r border-[#152857] bg-[#10214b] py-4 text-white">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg font-black text-[#10214b]">v</div>
-        <div className="mt-8 flex w-full flex-col gap-2 px-2">
-          <button className="flex w-full flex-col items-center gap-1.5 rounded-xl bg-blue-600 px-2 py-3 text-[10px] font-semibold shadow-lg shadow-blue-950/20"><Icon name="inbox" size={19}/>Leads</button>
-          <button type="button" onClick={onOpenDeals} className="flex w-full flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-[10px] font-semibold text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
-            <svg className="h-[19px] w-[19px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}><circle cx="12" cy="12" r="9"/><path strokeLinecap="round" d="M14.8 8.7c-.5-.7-1.4-1.1-2.6-1.1-1.5 0-2.6.8-2.6 2s.9 1.7 2.8 2.1c1.9.4 2.8 1 2.8 2.3 0 1.4-1.2 2.4-3 2.4-1.3 0-2.4-.5-3-1.3M12 5.8v12.4"/></svg>
-            Deals
-          </button>
-        </div>
-        <button className="mt-auto rounded-lg p-2.5 text-blue-200 hover:bg-white/10 hover:text-white"><Icon name="settings" size={19}/></button>
-      </aside>
-
-      <main className="ml-[72px] min-h-screen">
-        <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-          <div className="flex h-14 items-center justify-between gap-4 px-5 lg:px-7">
-            <div className="flex items-center gap-2 text-sm"><button type="button" onClick={onBack} aria-label="Back to leads" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><Icon name="arrow-left" size={18}/></button><span className="font-medium text-slate-400">Leads</span><span className="text-slate-300">/</span><span className="font-semibold text-slate-700">Lead detail</span></div>
-            <div className="hidden w-full max-w-sm items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-400 md:flex"><Icon name="search" size={16}/><span className="text-xs">Search leads, contacts or files</span></div>
-            <div className="flex items-center gap-2"><button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Icon name="settings" size={18}/></button><Avatar name="Priya Sharma"/></div>
-          </div>
-        </div>
-
+  return (<SalesNavigation activeItem="leads" onNavigate={onNavigateSales} searchPlaceholder="Search leads, contacts or files" avatar="PS">
+      <main className="lead-detail-page min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#f5f7fb] text-slate-800">
         <header className="border-b border-slate-200 bg-white px-5 pb-0 pt-5 lg:px-7">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0">
@@ -1420,5 +1401,5 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
 
 
       {toast && <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500"><Icon name="check" size={13}/></span>{toast}</div>}
-    </div>);
+    </SalesNavigation>);
 }
