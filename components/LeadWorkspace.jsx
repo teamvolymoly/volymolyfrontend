@@ -182,16 +182,6 @@ function Section({ title, children, accent, }) {
     </div>);
 }
 // ─── Checkbox Toggle ─────────────────────────────────────────────────────────
-function CheckboxToggle({ label, checked, onChange, }) {
-    return (<label className="flex items-center gap-2 cursor-pointer">
-      <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${checked ? "bg-blue-600 border-blue-600" : "border-gray-300"}`} onClick={() => onChange(!checked)}>
-        {checked && (<svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5"/>
-          </svg>)}
-      </span>
-      <span className="text-sm text-gray-700">{label}</span>
-    </label>);
-}
 // ─── CRM Workspace Shell ─────────────────────────────────────────────────────
 function LeadsIcon({ className = "h-5 w-5" }) {
     return (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
@@ -208,11 +198,29 @@ function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
     const saved = initialLead?.details;
     // Personal
     const [leadCreated] = useState(() => initialLead?.createdAt || new Date().toISOString());
-    const [contactPerson, setContactPerson] = useState(saved?.contactPerson ?? "");
-    const [email, setEmail] = useState(saved?.email ?? "");
-    const [phone, setPhone] = useState(saved?.phone ?? "");
+    const contactPerson = saved?.contactPerson ?? "";
+    const email = saved?.email ?? "";
+    const phone = saved?.phone ?? "";
     const [extraPhones, setExtraPhones] = useState(saved?.extraPhones ?? []);
     const [extraEmails, setExtraEmails] = useState(saved?.extraEmails ?? []);
+    const [contactPersons, setContactPersons] = useState(() => {
+        if (saved?.contactPersons?.length) {
+            return [...saved.contactPersons].sort((a, b) => {
+                const rank = { Primary: 0, Secondary: 1, Additional: 2 };
+                return rank[a.priority] - rank[b.priority];
+            });
+        }
+        return [{
+                id: "contact-1",
+                name: saved?.contactPerson ?? "",
+                designation: "",
+                priority: "Primary",
+                coordinationRole: "Primary coordinator",
+                email: saved?.email ?? "",
+                phone: saved?.phone ?? "",
+                preferredContact: saved?.contactWhatsapp ? "WhatsApp" : saved?.contactEmail ? "Email" : saved?.contactCall ? "Call" : "",
+            }];
+    });
     // Organization
     const [orgName, setOrgName] = useState(initialLead?.companyName ?? "");
     const [website, setWebsite] = useState(saved?.website ?? "");
@@ -222,9 +230,62 @@ function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
     const [revenue, setRevenue] = useState(saved?.revenue ?? "");
     const [industry, setIndustry] = useState(saved?.industry ?? "");
     // Contact method
-    const [contactCall, setContactCall] = useState(saved?.contactCall ?? false);
-    const [contactWhatsapp, setContactWhatsapp] = useState(saved?.contactWhatsapp ?? false);
-    const [contactEmail, setContactEmail] = useState(saved?.contactEmail ?? false);
+    const contactPriorityRank = {
+        Primary: 0,
+        Secondary: 1,
+        Additional: 2,
+    };
+    const sortContacts = (contacts) => [...contacts].sort((a, b) => contactPriorityRank[a.priority] - contactPriorityRank[b.priority]);
+    const updateContactPerson = (id, field, value) => {
+        setContactPersons((current) => sortContacts(current.map((contact) => contact.id === id ? { ...contact, [field]: value } : contact)));
+    };
+    const updateContactPriority = (id, priority) => {
+        setContactPersons((current) => {
+            let next = current.map((contact) => ({ ...contact }));
+            if (priority === "Primary") {
+                next = next.map((contact) => {
+                    if (contact.id === id)
+                        return { ...contact, priority: "Primary" };
+                    if (contact.priority === "Primary")
+                        return { ...contact, priority: "Secondary" };
+                    return contact;
+                });
+            }
+            else {
+                next = next.map((contact) => contact.id === id ? { ...contact, priority } : contact);
+                if (!next.some((contact) => contact.priority === "Primary") && next.length > 0) {
+                    next[0] = { ...next[0], priority: "Primary" };
+                }
+            }
+            return sortContacts(next);
+        });
+    };
+    const addContactPerson = () => {
+        setContactPersons((current) => sortContacts([
+            ...current,
+            {
+                id: `contact-${Date.now()}`,
+                name: "",
+                designation: "",
+                priority: current.length === 0 ? "Primary" : "Additional",
+                coordinationRole: "",
+                email: "",
+                phone: "",
+                preferredContact: "",
+            },
+        ]));
+    };
+    const removeContactPerson = (id) => {
+        setContactPersons((current) => {
+            if (current.length <= 1)
+                return current;
+            let next = current.filter((contact) => contact.id !== id);
+            if (!next.some((contact) => contact.priority === "Primary") && next.length > 0) {
+                next = next.map((contact, index) => index === 0 ? { ...contact, priority: "Primary" } : contact);
+            }
+            return sortContacts(next);
+        });
+    };
     // Social
     const [socialLinks, setSocialLinks] = useState(saved?.socialLinks ?? []);
     // Project Info
@@ -335,8 +396,16 @@ function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
     const existingAssetOptions = ["Brand Guidelines", "Existing Wireframes", "User Research", "Final Content", "Existing Product", "Analytics Data", "None"];
     const supportTypeOptions = ["Graphic Design", "UI Design Updates", "Website Maintenance", "Bug Fixes", "Content Updates", "Performance Optimisation", "Hosting / Deployment", "Third-party Integrations", "Security Updates", "Technical Consultation", "Other"];
     const accessOptions = ["Admin Panel", "Hosting / cPanel", "Domain / DNS", "Code Repository", "Analytics", "Design Files", "Not Available Yet"];
+    const coordinationRoleOptions = ["Primary coordinator", "Decision maker", "Project coordinator", "Finance / Billing", "Technical contact", "Approver", "Procurement", "Other"];
+    const preferredContactOptions = ["Call", "WhatsApp", "Email", "Meeting"];
     const buildLead = () => {
         const now = new Date();
+        const sortedContacts = sortContacts(contactPersons);
+        const primaryContact = sortedContacts.find((contact) => contact.priority === "Primary") ?? sortedContacts[0];
+        const primaryName = primaryContact?.name ?? contactPerson;
+        const primaryEmail = primaryContact?.email ?? email;
+        const primaryPhone = primaryContact?.phone ?? phone;
+        const primaryChannel = primaryContact?.preferredContact ?? "";
         const activityTime = new Intl.DateTimeFormat("en-IN", {
             hour: "numeric",
             minute: "2-digit",
@@ -344,7 +413,7 @@ function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
         }).format(now);
         return {
             universalId: initialLead?.universalId || leadId,
-            companyName: orgName.trim() || contactPerson.trim() || "Untitled lead",
+            companyName: orgName.trim() || primaryName.trim() || "Untitled lead",
             nextActivity: initialLead?.nextActivity || `Today ${activityTime}`,
             projectNeeds,
             label: priority,
@@ -353,9 +422,10 @@ function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
             createdAt: initialLead?.createdAt || now.toISOString(),
             archived: initialLead?.archived ?? false,
             details: {
-                contactPerson,
-                email,
-                phone,
+                contactPerson: primaryName,
+                contactPersons: sortedContacts,
+                email: primaryEmail,
+                phone: primaryPhone,
                 extraPhones,
                 extraEmails,
                 website,
@@ -364,9 +434,9 @@ function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
                 employees,
                 revenue,
                 industry,
-                contactCall,
-                contactWhatsapp,
-                contactEmail,
+                contactCall: primaryChannel === "Call",
+                contactWhatsapp: primaryChannel === "WhatsApp",
+                contactEmail: primaryChannel === "Email",
                 socialLinks,
                 sourceChannels,
                 referralSource,
@@ -472,34 +542,89 @@ function AddLeadForm({ leadId, initialLead, onCancel, onSave, onConvert }) {
               </svg>
             </div>
           </Field>
-          <Field label="Contact Person" required>
-            <TextInput value={contactPerson} onChange={setContactPerson} placeholder="Full name"/>
-          </Field>
-          <Field label="Email" required>
-            <div className="space-y-2">
-              <TextInput value={email} onChange={setEmail} placeholder="email@example.com" type="email"/>
-              {extraEmails.map((em, i) => (<div key={i} className="flex gap-2">
-                  <TextInput value={em} onChange={(v) => { const arr = [...extraEmails]; arr[i] = v; setExtraEmails(arr); }} placeholder="Additional email" type="email"/>
-                  <button onClick={() => setExtraEmails(extraEmails.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500 transition-colors text-xs">✕</button>
-                </div>))}
-              <button onClick={() => setExtraEmails([...extraEmails, ""])} className="text-xs text-blue-600 hover:text-blue-700 font-medium">+ Add Email</button>
-            </div>
-          </Field>
-          <Field label="Phone">
-            <div className="space-y-2">
-              <TextInput value={phone} onChange={setPhone} placeholder="+91 00000 00000" type="tel"/>
-              {extraPhones.map((ph, i) => (<div key={i} className="flex gap-2">
-                  <TextInput value={ph} onChange={(v) => { const arr = [...extraPhones]; arr[i] = v; setExtraPhones(arr); }} placeholder="Additional phone" type="tel"/>
-                  <button onClick={() => setExtraPhones(extraPhones.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500 transition-colors text-xs">✕</button>
-                </div>))}
-              <button onClick={() => setExtraPhones([...extraPhones, ""])} className="text-xs text-blue-600 hover:text-blue-700 font-medium">+ Add Phone</button>
-            </div>
-          </Field>
-          <Field label="Preferred Contact">
-            <div className="flex gap-4">
-              <CheckboxToggle label="Call" checked={contactCall} onChange={setContactCall}/>
-              <CheckboxToggle label="WhatsApp" checked={contactWhatsapp} onChange={setContactWhatsapp}/>
-              <CheckboxToggle label="Email" checked={contactEmail} onChange={setContactEmail}/>
+          <Field label="Contact Persons" required hint="Add everyone from this organization who may be involved in coordination. Keep one person as Primary.">
+            <div className="space-y-3">
+              {sortContacts(contactPersons).map((contact, index) => (
+                <div key={contact.id} className="rounded-xl border border-gray-200 bg-gray-50/40 p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{contact.name.trim() || `Contact person ${index + 1}`}</p>
+                        <p className="text-[11px] text-gray-400">{contact.priority === "Primary" ? "Main coordination contact" : "Supporting coordination contact"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                        contact.priority === "Primary"
+                          ? "bg-blue-100 text-blue-700"
+                          : contact.priority === "Secondary"
+                          ? "bg-violet-100 text-violet-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}>
+                        {contact.priority}
+                      </span>
+                      {contactPersons.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeContactPerson(contact.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                          aria-label={`Remove ${contact.name || `contact ${index + 1}`}`}
+                          title="Remove contact"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-[11px] font-medium text-gray-500">Full name {contact.priority === "Primary" && <span className="text-red-400">*</span>}</label>
+                      <TextInput value={contact.name} onChange={(value) => updateContactPerson(contact.id, "name", value)} placeholder="Full name" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-medium text-gray-500">Designation</label>
+                      <TextInput value={contact.designation} onChange={(value) => updateContactPerson(contact.id, "designation", value)} placeholder="e.g. Founder, Marketing Manager" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-medium text-gray-500">Contact priority</label>
+                      <Select options={["Primary", "Secondary", "Additional"]} value={contact.priority} onChange={(value) => updateContactPriority(contact.id, value)} placeholder="Select priority" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-medium text-gray-500">Coordination role</label>
+                      <Select options={coordinationRoleOptions} value={contact.coordinationRole} onChange={(value) => updateContactPerson(contact.id, "coordinationRole", value)} placeholder="Select role" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-medium text-gray-500">Email</label>
+                      <TextInput value={contact.email} onChange={(value) => updateContactPerson(contact.id, "email", value)} placeholder="email@example.com" type="email" />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-medium text-gray-500">Phone</label>
+                      <TextInput value={contact.phone} onChange={(value) => updateContactPerson(contact.id, "phone", value)} placeholder="+91 00000 00000" type="tel" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="mb-1 block text-[11px] font-medium text-gray-500">Preferred contact channel</label>
+                      <Select options={preferredContactOptions} value={contact.preferredContact} onChange={(value) => updateContactPerson(contact.id, "preferredContact", value)} placeholder="Select preferred channel" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addContactPerson}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-blue-300 bg-blue-50/40 px-3 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-50"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+                </svg>
+                Add contact person
+              </button>
             </div>
           </Field>
           <Field label="Social Links">

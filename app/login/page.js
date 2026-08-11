@@ -1,4 +1,4 @@
-import AuthPanel from "../../components/AuthPanel";
+import CompactLoginPanel from "../../components/CompactLoginPanel";
 
 export const metadata = {
   title: "Sign in | Volymoly CRM",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function LoginPage() {
-  return <AuthPanel mode="login"/>;
+  return <CompactLoginPanel />;
 }
