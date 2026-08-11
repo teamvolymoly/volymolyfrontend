@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const salesItems = [
     { id: "leads", label: "Leads", icon: "leads" },
@@ -68,6 +68,8 @@ export default function SalesNavigation({
 }) {
     const [menuOpen, setMenuOpen] = useState(true);
     const [localSearch, setLocalSearch] = useState("");
+    const menuRef = useRef(null);
+    const navigationRailRef = useRef(null);
     const activeLabel = getSalesLabel(activeItem);
     const resolvedSearchValue = searchValue ?? localSearch;
     const handleSearchChange = (event) => {
@@ -78,14 +80,39 @@ export default function SalesNavigation({
             setLocalSearch(value);
     };
 
+    useEffect(() => {
+        if (!menuOpen)
+            return undefined;
+
+        const closeOnOutsideClick = (event) => {
+            if (event.target.closest("[data-sales-menu-toggle]"))
+                return;
+            const clickedInsideMenu = menuRef.current?.contains(event.target);
+            const clickedInsideNavigationRail = navigationRailRef.current?.contains(event.target);
+            if (!clickedInsideMenu && !clickedInsideNavigationRail)
+                setMenuOpen(false);
+        };
+        const closeOnEscape = (event) => {
+            if (event.key === "Escape")
+                setMenuOpen(false);
+        };
+
+        document.addEventListener("pointerdown", closeOnOutsideClick);
+        document.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.removeEventListener("pointerdown", closeOnOutsideClick);
+            document.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [menuOpen]);
+
     return (<div className="sales-navigation flex h-screen overflow-hidden bg-white text-slate-900">
-      <aside className="flex h-screen w-[64px] shrink-0 flex-col items-center border-r border-[#22345d] bg-[#152754] text-white">
+      <aside ref={navigationRailRef} className="flex h-screen w-[64px] shrink-0 flex-col items-center border-r border-[#22345d] bg-[#152754] text-white">
         <div className="flex h-14 w-full items-center justify-center border-b border-white/10">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm font-black text-[#10214b] shadow-sm">V</div>
         </div>
 
         <nav className="flex w-full flex-1 flex-col items-center pt-5" aria-label="Primary navigation">
-          <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} className="flex w-[52px] flex-col items-center gap-1 rounded-xl bg-blue-600 px-1 py-2.5 text-[10px] font-semibold text-white shadow-lg shadow-blue-950/20 transition-colors hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
+          <button type="button" data-sales-menu-toggle onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} className="flex w-[52px] flex-col items-center gap-1 rounded-xl bg-blue-600 px-1 py-2.5 text-[10px] font-semibold text-white shadow-lg shadow-blue-950/20 transition-colors hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
             <NavigationIcon name="sales" className="h-5 w-5"/>
             Sales
           </button>
@@ -97,7 +124,7 @@ export default function SalesNavigation({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "Collapse Sales menu" : "Open Sales menu"} aria-expanded={menuOpen} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
+            <button type="button" data-sales-menu-toggle onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "Collapse Sales menu" : "Open Sales menu"} aria-expanded={menuOpen} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
                 <path strokeLinecap="round" d="M4 7h12M4 12h12M4 17h12"/>
                 <path strokeLinecap="round" strokeLinejoin="round" d={menuOpen ? "M20 7l-4 5 4 5" : "M17 7l4 5-4 5"}/>
@@ -124,11 +151,11 @@ export default function SalesNavigation({
         </header>
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          {menuOpen && (<aside className="w-[272px] shrink-0 border-r border-slate-200 bg-[#fbfbfc] text-slate-800 shadow-[2px_0_8px_rgba(15,23,42,0.025)]">
+          {menuOpen && (<aside ref={menuRef} className="w-[272px] shrink-0 border-r border-slate-200 bg-[#fbfbfc] text-slate-800 shadow-[2px_0_8px_rgba(15,23,42,0.025)]">
             <nav className="space-y-1 p-3" aria-label="Sales navigation">
               {salesItems.map((item) => {
                 const active = item.id === activeItem;
-                return (<button key={item.id} type="button" onClick={() => onNavigate(item.id)} aria-current={active ? "page" : undefined} className={`flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-medium transition-colors ${active ? "bg-blue-100 text-blue-700" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"}`}>
+                return (<button key={item.id} type="button" onClick={() => { onNavigate(item.id); setMenuOpen(false); }} aria-current={active ? "page" : undefined} className={`flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-medium transition-colors ${active ? "bg-blue-100 text-blue-700" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"}`}>
                   <NavigationIcon name={item.icon} className={`h-[22px] w-[22px] shrink-0 ${active ? "text-blue-600" : "text-slate-500"}`}/>
                   <span className="truncate">{item.label}</span>
                 </button>);
