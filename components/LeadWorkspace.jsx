@@ -983,6 +983,14 @@ const columnLabels = {
     category: "Category",
     assignedTo: "Assigned to",
 };
+const defaultColumnWidths = {
+    companyName: 340,
+    nextActivity: 320,
+    projectNeeds: 314,
+    label: 186,
+    category: 244,
+    assignedTo: 280,
+};
 function getInitialLeads() {
     if (typeof window === "undefined")
         return [];
@@ -1026,6 +1034,20 @@ function getInitialColumnOrder() {
     }
     return defaultColumnOrder;
 }
+function getInitialColumnWidths() {
+    if (typeof window === "undefined")
+        return defaultColumnWidths;
+    try {
+        const stored = window.localStorage.getItem("volymoly-lead-column-widths-fullview-v1");
+        const parsed = stored ? JSON.parse(stored) : null;
+        if (parsed && defaultColumnOrder.every((column) => Number.isFinite(parsed[column])))
+            return { ...defaultColumnWidths, ...parsed };
+    }
+    catch {
+        // Use the default widths when stored preferences cannot be read.
+    }
+    return defaultColumnWidths;
+}
 function LeadFormModal({ children, onClose }) {
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -1058,6 +1080,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
     const [columnOrder, setColumnOrder] = useState(defaultColumnOrder);
     const [columnsHydrated, setColumnsHydrated] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState(defaultColumnOrder);
+    const [columnWidths, setColumnWidths] = useState(defaultColumnWidths);
     const [draggedColumn, setDraggedColumn] = useState(null);
     const [mailbox, setMailbox] = useState("inbox");
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1066,6 +1089,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
         // Load browser-only preferences after the server and client have hydrated the same markup.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setColumnOrder(getInitialColumnOrder());
+        setColumnWidths(getInitialColumnWidths());
         setColumnsHydrated(true);
     }, []);
     useEffect(() => {
@@ -1073,6 +1097,11 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
             return;
         window.localStorage.setItem("volymoly-lead-columns-fullview-v2", JSON.stringify(columnOrder));
     }, [columnOrder, columnsHydrated]);
+    useEffect(() => {
+        if (!columnsHydrated)
+            return;
+        window.localStorage.setItem("volymoly-lead-column-widths-fullview-v1", JSON.stringify(columnWidths));
+    }, [columnWidths, columnsHydrated]);
     useEffect(() => {
         const closeMenus = () => setSettingsOpen(false);
         window.addEventListener("click", closeMenus);
@@ -1119,6 +1148,25 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
             next.splice(targetIndex, 0, source);
             return next;
         });
+    };
+    const startColumnResize = (event, column) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setDraggedColumn(null);
+        const startX = event.clientX;
+        const startWidth = columnWidths[column];
+        const handlePointerMove = (moveEvent) => {
+            const nextWidth = Math.min(600, Math.max(110, startWidth + moveEvent.clientX - startX));
+            setColumnWidths((current) => ({ ...current, [column]: nextWidth }));
+        };
+        const stopColumnResize = () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", stopColumnResize);
+            window.removeEventListener("pointercancel", stopColumnResize);
+        };
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", stopColumnResize);
+        window.addEventListener("pointercancel", stopColumnResize);
     };
     const renderCell = (lead, column) => {
         if (column === "companyName") {
@@ -1220,8 +1268,13 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
         </button>
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-auto bg-white">
-        <table className="w-full min-w-[1040px] border-collapse text-left">
+      <div data-sales-menu-keep-open className="relative min-h-0 flex-1 overflow-auto bg-white">
+        <table className="min-w-full table-fixed border-collapse text-left" style={{ width: columnOrder.filter((column) => visibleColumns.includes(column)).reduce((total, column) => total + columnWidths[column], 92) }}>
+          <colgroup>
+            <col style={{ width: 44 }}/>
+            {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => (<col key={column} style={{ width: columnWidths[column] }}/>))}
+            <col style={{ width: 48 }}/>
+          </colgroup>
           <thead className="sticky top-0 z-20 bg-[#f8faff] shadow-[0_1px_0_#e5e7eb]">
             <tr>
               <th className="h-10 w-11 border-r border-gray-200 px-3 text-center">
@@ -1231,7 +1284,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
                 if (draggedColumn)
                     moveColumn(draggedColumn, column);
                 setDraggedColumn(null);
-            }} className={`h-10 cursor-grab select-none border-r border-gray-200 px-3 text-xs font-semibold text-gray-600 transition-colors active:cursor-grabbing ${draggedColumn === column ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50/70"}`} title="Drag to reorder this column">
+            }} className={`relative h-10 cursor-grab select-none border-r border-gray-200 px-3 text-xs font-semibold text-gray-600 transition-colors active:cursor-grabbing ${draggedColumn === column ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50/70"}`} title="Drag to reorder this column">
                   <span className="inline-flex items-center gap-1.5">
                     {columnLabels[column]}
                     <svg className="h-3 w-3 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -1241,6 +1294,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
                       <circle cx="14" cy="14" r="1.2"/>
                     </svg>
                   </span>
+                  <span role="separator" aria-orientation="vertical" aria-label={`Resize ${columnLabels[column]} column`} onPointerDown={(event) => startColumnResize(event, column)} onDragStart={(event) => { event.preventDefault(); event.stopPropagation(); }} className="absolute -right-1 top-0 z-30 h-full w-2 cursor-col-resize touch-none hover:bg-blue-400/60" title="Drag to resize column"/>
                 </th>))}
               <th className="relative h-10 w-12 border-l border-gray-200 px-1 text-center">
                 <button type="button" onClick={(event) => {
@@ -1277,6 +1331,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
                     <button type="button" onClick={() => {
                 setColumnOrder(defaultColumnOrder);
                 setVisibleColumns(defaultColumnOrder);
+                setColumnWidths(defaultColumnWidths);
                 setSettingsOpen(false);
             }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

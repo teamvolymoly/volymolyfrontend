@@ -381,6 +381,16 @@ const dealColumnLabels = {
     nextActivity: "Next activity",
     assignedTo: "Assigned to",
 };
+const defaultDealColumnWidths = {
+    deal: 280,
+    organization: 210,
+    stage: 195,
+    value: 145,
+    probability: 158,
+    expectedClose: 196,
+    nextActivity: 260,
+    assignedTo: 180,
+};
 function ListView({ deals, onOpen, selected, setSelected }) {
     const [columnOrder, setColumnOrder] = useState(() => {
         try {
@@ -402,6 +412,18 @@ function ListView({ deals, onOpen, selected, setSelected }) {
             return defaultDealColumnOrder;
         }
     });
+    const [columnWidths, setColumnWidths] = useState(() => {
+        try {
+            const saved = window.localStorage.getItem("volymoly-deal-list-column-widths-v1");
+            const parsed = saved ? JSON.parse(saved) : null;
+            return parsed && defaultDealColumnOrder.every((column) => Number.isFinite(parsed[column]))
+                ? { ...defaultDealColumnWidths, ...parsed }
+                : defaultDealColumnWidths;
+        }
+        catch {
+            return defaultDealColumnWidths;
+        }
+    });
     const [draggedColumn, setDraggedColumn] = useState(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const settingsRef = useRef(null);
@@ -415,6 +437,9 @@ function ListView({ deals, onOpen, selected, setSelected }) {
     useEffect(() => {
         window.localStorage.setItem("volymoly-deal-list-visible-columns-v1", JSON.stringify(visibleColumns));
     }, [visibleColumns]);
+    useEffect(() => {
+        window.localStorage.setItem("volymoly-deal-list-column-widths-v1", JSON.stringify(columnWidths));
+    }, [columnWidths]);
     useEffect(() => {
         const close = (event) => {
             if (settingsRef.current && !settingsRef.current.contains(event.target))
@@ -442,6 +467,25 @@ function ListView({ deals, onOpen, selected, setSelected }) {
     const toggleDeal = (id) => {
         setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
     };
+    const startColumnResize = (event, column) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setDraggedColumn(null);
+        const startX = event.clientX;
+        const startWidth = columnWidths[column];
+        const handlePointerMove = (moveEvent) => {
+            const nextWidth = Math.min(600, Math.max(110, startWidth + moveEvent.clientX - startX));
+            setColumnWidths((current) => ({ ...current, [column]: nextWidth }));
+        };
+        const stopColumnResize = () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", stopColumnResize);
+            window.removeEventListener("pointercancel", stopColumnResize);
+        };
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", stopColumnResize);
+        window.addEventListener("pointercancel", stopColumnResize);
+    };
     const renderCell = (deal, column) => {
         switch (column) {
             case "deal":
@@ -465,12 +509,12 @@ function ListView({ deals, onOpen, selected, setSelected }) {
         }
     };
     return (<div className="flex min-h-0 flex-1 flex-col bg-white">
-      <div className="relative min-h-0 flex-1 overflow-auto bg-white">
-        <table className="w-full min-w-[1180px] border-collapse text-left">
+      <div data-sales-menu-keep-open className="relative min-h-0 flex-1 overflow-auto bg-white">
+        <table className="min-w-full table-fixed border-collapse text-left" style={{ width: columnOrder.filter((column) => visibleColumns.includes(column)).reduce((total, column) => total + columnWidths[column], 96) }}>
           <colgroup>
-            <col className="w-12"/>
-            {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => <col key={column}/>)}
-            <col className="w-12"/>
+            <col style={{ width: 48 }}/>
+            {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => <col key={column} style={{ width: columnWidths[column] }}/>) }
+            <col style={{ width: 48 }}/>
           </colgroup>
           <thead className="sticky top-0 z-20 bg-[#f8faff] shadow-[0_1px_0_#e2e8f0]">
             <tr>
@@ -483,7 +527,7 @@ function ListView({ deals, onOpen, selected, setSelected }) {
                 if (draggedColumn)
                     moveColumn(draggedColumn, column);
                 setDraggedColumn(null);
-            }} className={`h-10 cursor-grab select-none border-r border-slate-200 px-3 text-xs font-semibold text-slate-600 transition-colors active:cursor-grabbing ${draggedColumn === column ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50/70"}`} title="Drag to reorder this column">
+            }} className={`relative h-10 cursor-grab select-none border-r border-slate-200 px-3 text-xs font-semibold text-slate-600 transition-colors active:cursor-grabbing ${draggedColumn === column ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50/70"}`} title="Drag to reorder this column">
                   <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                     {dealColumnLabels[column]}
                     <svg className="h-3 w-3 text-slate-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -493,6 +537,7 @@ function ListView({ deals, onOpen, selected, setSelected }) {
                       <circle cx="14" cy="14" r="1.2"/>
                     </svg>
                   </span>
+                  <span role="separator" aria-orientation="vertical" aria-label={`Resize ${dealColumnLabels[column]} column`} onPointerDown={(event) => startColumnResize(event, column)} onDragStart={(event) => { event.preventDefault(); event.stopPropagation(); }} className="absolute -right-1 top-0 z-30 h-full w-2 cursor-col-resize touch-none hover:bg-blue-400/60" title="Drag to resize column"/>
                 </th>))}
               <th ref={settingsRef} className="relative h-10 w-12 border-l border-slate-200 px-1 text-center align-middle">
                 <button type="button" onClick={(event) => { event.stopPropagation(); setSettingsOpen((current) => !current); }} className="mx-auto flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-700" title="Table settings" aria-label="Table settings">
@@ -519,6 +564,7 @@ function ListView({ deals, onOpen, selected, setSelected }) {
                     <button type="button" onClick={() => {
                 setColumnOrder(defaultDealColumnOrder);
                 setVisibleColumns(defaultDealColumnOrder);
+                setColumnWidths(defaultDealColumnWidths);
                 setSettingsOpen(false);
             }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs font-normal leading-4 text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
                       <Icon name="restore" className="h-3.5 w-3.5"/>
@@ -542,8 +588,8 @@ function ListView({ deals, onOpen, selected, setSelected }) {
                       <Checkbox checked={isSelected} onChange={() => toggleDeal(deal.id)} label={`Select ${deal.title}`}/>
                     </div>
                   </td>
-                  {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => (<td key={column} className="border-r border-slate-200 px-3 py-2 text-sm align-middle">
-                      {renderCell(deal, column)}
+                  {columnOrder.filter((column) => visibleColumns.includes(column)).map((column) => (<td key={column} className="overflow-hidden whitespace-nowrap text-ellipsis border-r border-slate-200 px-3 py-2 text-sm align-middle">
+                      <div className="overflow-hidden text-ellipsis whitespace-nowrap">{renderCell(deal, column)}</div>
                     </td>))}
                   <td className="w-12 border-l border-slate-200 px-1 py-1 text-center align-middle">
                     <button type="button" onClick={(event) => { event.stopPropagation(); onOpen(deal); }} className="mx-auto flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-700" title="Open deal detail" aria-label={`Open ${deal.title} deal detail`}>

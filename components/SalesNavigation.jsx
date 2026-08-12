@@ -87,6 +87,8 @@ export default function SalesNavigation({
         const closeOnOutsideClick = (event) => {
             if (event.target.closest("[data-sales-menu-toggle]"))
                 return;
+            if (event.target.closest("[data-sales-menu-keep-open]"))
+                return;
             const clickedInsideMenu = menuRef.current?.contains(event.target);
             const clickedInsideNavigationRail = navigationRailRef.current?.contains(event.target);
             if (!clickedInsideMenu && !clickedInsideNavigationRail)
