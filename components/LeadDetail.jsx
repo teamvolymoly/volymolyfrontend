@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState } from "react";
 import SalesNavigation from "./SalesNavigation";
 const tabs = ["Overview", "Project Information", "Activity", "Notes", "Files", "More", "AI Summary"];
-const statusOptions = ["New", "Contacted", "Qualified", "Proposal Sent", "Negotiation", "Won", "Lost"];
+const statusOptions = ["Contacted", "Not Contacted", "Pre Qualified", "Not Qualified", "Future Lead", "Junk Lead"];
 const fallbackLead = {
     companyName: "Hotel Jindal",
     contactName: "Rohit Jindal",
     universalCode: "VL-2026-0001",
-    status: "Qualified",
+    status: "Not Contacted",
     assignedTo: "Priya Sharma",
     email: "rohit@hoteljindal.com",
     phone: "+91 98765 43210",
@@ -632,7 +632,7 @@ function mapLeadRecord(sourceLead) {
         companyName: sourceLead.companyName || "Unnamed lead",
         contactName: details.contactPerson || "Not provided",
         universalCode: sourceLead.universalId || "Not available",
-        status: details.leadStatus || "New",
+        status: statusOptions.includes(details.leadStatus) ? details.leadStatus : "Not Contacted",
         assignedTo: sourceLead.assignedTo || "Unassigned",
         email: details.email || "",
         phone: details.phone || "",
