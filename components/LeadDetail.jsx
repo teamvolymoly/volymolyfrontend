@@ -1,10 +1,67 @@
+"use client";
 import { useMemo, useRef, useState } from "react";
-import SalesNavigation from "./SalesNavigation";
 const tabs = ["Overview", "Project Information", "Activity", "Notes", "Files", "More", "AI Summary"];
 const statusOptions = ["New", "Contacted", "Qualified", "Proposal Sent", "Negotiation", "Won", "Lost"];
-const fallbackLead = {
+const contactPriorityOptions = ["Primary", "Secondary", "Additional"];
+const coordinationRoleOptions = ["Decision maker", "Project coordinator", "Marketing / Brand", "Finance / Billing", "Technical contact", "Operations", "Other"];
+const preferredChannelOptions = ["Call", "WhatsApp", "Email", "Meeting"];
+function normalizeContacts(contacts) {
+    if (!contacts.length)
+        return contacts;
+    const firstPrimary = contacts.findIndex((contact) => contact.contactPriority === "Primary");
+    return contacts.map((contact, index) => ({
+        ...contact,
+        contactPriority: firstPrimary === -1
+            ? (index === 0 ? "Primary" : contact.contactPriority)
+            : (contact.contactPriority === "Primary" && index !== firstPrimary ? "Secondary" : contact.contactPriority),
+    }));
+}
+function syncPrimaryContact(lead) {
+    const contacts = normalizeContacts(lead.contacts);
+    const primary = contacts.find((contact) => contact.contactPriority === "Primary") || contacts[0];
+    return {
+        ...lead,
+        contacts,
+        contactName: primary?.name || "",
+        email: primary?.email || "",
+        phone: primary?.phone || "",
+    };
+}
+const initialLead = {
     companyName: "Hotel Jindal",
     contactName: "Rohit Jindal",
+    contacts: [
+        {
+            id: 1,
+            name: "Rohit Jindal",
+            designation: "Director",
+            contactPriority: "Primary",
+            coordinationRole: "Decision maker",
+            email: "rohit@hoteljindal.com",
+            phone: "+91 98765 43210",
+            preferredChannel: "Call",
+        },
+        {
+            id: 2,
+            name: "Neha Jindal",
+            designation: "Marketing Manager",
+            contactPriority: "Secondary",
+            coordinationRole: "Project coordinator",
+            email: "marketing@hoteljindal.com",
+            phone: "+91 98260 11882",
+            preferredChannel: "WhatsApp",
+        },
+        {
+            id: 3,
+            name: "Amit Shah",
+            designation: "Finance Manager",
+            contactPriority: "Additional",
+            coordinationRole: "Finance / Billing",
+            email: "accounts@hoteljindal.com",
+            phone: "+91 73140 22110",
+            preferredChannel: "Email",
+        },
+    ],
     universalCode: "VL-2026-0001",
     status: "Qualified",
     assignedTo: "Priya Sharma",
@@ -438,6 +495,114 @@ function SelectField({ label, value, options, onChange }) {
       </div>
     </label>);
 }
+function ContactPersonsEditor({ contacts, onChange }) {
+    const ordered = [...contacts].sort((a, b) => {
+        const rank = { Primary: 0, Secondary: 1, Additional: 2 };
+        return rank[a.contactPriority] - rank[b.contactPriority];
+    });
+    function updateContact(id, patch) {
+        let next = contacts.map((contact) => contact.id === id ? { ...contact, ...patch } : contact);
+        if (patch.contactPriority === "Primary") {
+            next = next.map((contact) => contact.id !== id && contact.contactPriority === "Primary" ? { ...contact, contactPriority: "Secondary" } : contact);
+        }
+        onChange(normalizeContacts(next));
+    }
+    function addContact() {
+        const hasPrimary = contacts.some((contact) => contact.contactPriority === "Primary");
+        onChange(normalizeContacts([
+            ...contacts,
+            {
+                id: Date.now(),
+                name: "",
+                designation: "",
+                contactPriority: hasPrimary ? "Additional" : "Primary",
+                coordinationRole: "Project coordinator",
+                email: "",
+                phone: "",
+                preferredChannel: "Call",
+            },
+        ]));
+    }
+    function removeContact(id) {
+        onChange(normalizeContacts(contacts.filter((contact) => contact.id !== id)));
+    }
+    return (<div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><Icon name="users" size={16}/></div>
+            <h3 className="text-sm font-bold text-slate-900">Contact Persons</h3>
+          </div>
+          <p className="mt-1.5 text-xs leading-5 text-slate-500">Set one primary contact, then classify the other people by how your team should coordinate with them.</p>
+        </div>
+        <Button variant="secondary" icon="plus" onClick={addContact}>Add contact</Button>
+      </div>
+
+      <div className="space-y-3">
+        {ordered.map((contact, index) => (<div key={contact.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">{index + 1}</div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-slate-800">{contact.name || `Contact person ${index + 1}`}</p>
+                    <Badge tone={contact.contactPriority === "Primary" ? "blue" : contact.contactPriority === "Secondary" ? "purple" : "slate"}>{contact.contactPriority}</Badge>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-400">{contact.coordinationRole || "Coordination role not set"}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => removeContact(contact.id)} aria-label="Remove contact" title="Remove contact" className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"><Icon name="trash" size={16}/></button>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <Field label="Contact name" value={contact.name} onChange={(value) => updateContact(contact.id, { name: value })}/>
+              <Field label="Designation" value={contact.designation} onChange={(value) => updateContact(contact.id, { designation: value })} placeholder="e.g. Marketing Manager"/>
+              <SelectField label="Contact priority" value={contact.contactPriority} options={contactPriorityOptions} onChange={(value) => updateContact(contact.id, { contactPriority: value })}/>
+              <SelectField label="Coordination role" value={contact.coordinationRole} options={coordinationRoleOptions} onChange={(value) => updateContact(contact.id, { coordinationRole: value })}/>
+              <Field label="Email" type="email" value={contact.email} onChange={(value) => updateContact(contact.id, { email: value })}/>
+              <Field label="Phone" type="tel" value={contact.phone} onChange={(value) => updateContact(contact.id, { phone: value })}/>
+              <SelectField label="Preferred channel" value={contact.preferredChannel} options={preferredChannelOptions} onChange={(value) => updateContact(contact.id, { preferredChannel: value })}/>
+            </div>
+          </div>))}
+
+        {!ordered.length && (<div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-7 text-center">
+            <Icon name="users" size={22} className="mx-auto text-slate-300"/>
+            <p className="mt-2 text-sm font-semibold text-slate-700">No contact persons added</p>
+            <p className="mt-1 text-xs text-slate-400">Add the people your team will coordinate with for this organization.</p>
+          </div>)}
+      </div>
+    </div>);
+}
+function ContactPersonsDisplay({ contacts }) {
+    const ordered = [...contacts].sort((a, b) => {
+        const rank = { Primary: 0, Secondary: 1, Additional: 2 };
+        return rank[a.contactPriority] - rank[b.contactPriority];
+    });
+    if (!ordered.length)
+        return <div className="p-5 text-sm text-slate-400">No contact persons added.</div>;
+    return (<div className="grid gap-3 p-5 lg:grid-cols-2">
+      {ordered.map((contact) => (<article key={contact.id} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+          <div className="flex items-start gap-3">
+            <Avatar name={contact.name || "Contact"} size="sm"/>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-sm font-bold text-slate-900">{contact.name || "Unnamed contact"}</p>
+                <Badge tone={contact.contactPriority === "Primary" ? "blue" : contact.contactPriority === "Secondary" ? "purple" : "slate"}>{contact.contactPriority}</Badge>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">{contact.designation || "Designation not added"} · {contact.coordinationRole || "Coordination role not set"}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+            <a href={`mailto:${contact.email}`} className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-blue-600 hover:border-blue-200 hover:bg-blue-50/50"><Icon name="mail" size={14}/><span className="truncate">{contact.email || "No email"}</span></a>
+            <a href={`tel:${contact.phone}`} className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-blue-600 hover:border-blue-200 hover:bg-blue-50/50"><Icon name="phone" size={14}/><span className="truncate">{contact.phone || "No phone"}</span></a>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
+            <span className="text-xs font-medium text-slate-400">Preferred channel</span>
+            <Badge tone="slate">{contact.preferredChannel || "Not set"}</Badge>
+          </div>
+        </article>))}
+    </div>);
+}
 function LockedField({ label, value }) {
     return (<div>
       <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><Icon name="lock" size={13} className="text-slate-400"/>{label}</div>
@@ -620,113 +785,41 @@ function ActivitySchedulerModal({ form, onChange, activities, lead, onClose, onS
       </div>
     </div>);
 }
-function mapLeadRecord(sourceLead) {
-    if (!sourceLead)
-        return fallbackLead;
-    const details = sourceLead.details || {};
-    const budget = details.budgetType === "RANGE"
-        ? [details.budgetMin, details.budgetMax].filter(Boolean).join(" – ")
-        : details.budgetFixed || details.budgetMin || "Not provided";
-    return {
-        ...fallbackLead,
-        companyName: sourceLead.companyName || "Unnamed lead",
-        contactName: details.contactPerson || "Not provided",
-        universalCode: sourceLead.universalId || "Not available",
-        status: details.leadStatus || "New",
-        assignedTo: sourceLead.assignedTo || "Unassigned",
-        email: details.email || "",
-        phone: details.phone || "",
-        website: details.website || "",
-        location: details.address || details.country || "Not provided",
-        source: details.sourceChannels?.[0] || "Not provided",
-        category: sourceLead.category || "Not set",
-        label: sourceLead.label || "Normal",
-        priority: sourceLead.label || "Normal",
-        visibility: "Lead owner & management",
-        createdAt: sourceLead.createdAt
-            ? new Date(sourceLead.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
-            : "Not available",
-        budget,
-        budgetType: details.budgetType || "Not provided",
-        currency: details.currency || "",
-        timeline: [details.timelineStart, details.timelineEnd].filter(Boolean).join(" – ") || "Not provided",
-        timelineStart: details.timelineStart || "",
-        timelineEnd: details.timelineEnd || "",
-        industry: details.industry || "Not provided",
-        employees: details.employees || "Not provided",
-        annualRevenue: details.revenue || "Not provided",
-        country: details.country || "",
-        address: details.address || "",
-        preferredContact: [details.contactCall && "Call", details.contactWhatsapp && "WhatsApp", details.contactEmail && "Email"].filter(Boolean),
-        alternateEmails: details.extraEmails || [],
-        alternatePhones: details.extraPhones || [],
-        socialLinks: (details.socialLinks || []).map((item) => item.url || item).filter(Boolean),
-        sourceChannels: details.sourceChannels || [],
-        referralSource: details.referralSource || "",
-        referralChannelId: details.referralChannelId || "",
-        projectNeeds: sourceLead.projectNeeds || [],
-        brandName: details.brandName || "",
-        brandingRequirements: details.brandingReq || [],
-        brandType: details.brandType || [],
-        brandingDeliverables: details.deliverables || [],
-        brandingStyle: details.stylePreference || [],
-        referenceBrands: details.refBrands || "",
-        colorPreference: details.colorPreference || "",
-        targetAudience: details.targetAudience || "",
-        brandingDetails: details.brandingDetailedReq || "",
-        brandingAiSummary: details.brandingAiSummary || "",
-        techPreference: details.techPreference || "",
-        frontends: details.frontends || [],
-        backends: details.backends || [],
-        databases: details.databases || [],
-        cms: details.cms || [],
-        paymentMethods: details.payments || [],
-        hosting: details.hosting || [],
-        mobileApps: details.mobileApps || [],
-        techNotes: details.techNotes || "",
-        websiteDetails: details.detailedReq || "",
-        websiteAiSummary: details.websiteAiSummary || "",
-        uxProductType: details.uxProductType || "",
-        uxScope: details.uxScope || [],
-        uxPlatforms: details.uxPlatforms || [],
-        screenCount: details.screenCount || "",
-        existingAssets: details.existingAssets || [],
-        uxStyle: details.uxStyle || [],
-        uxReferences: details.uxReferences || "",
-        uxTargetUsers: details.uxTargetUsers || "",
-        accessibility: details.accessibility || "",
-        uxNotes: details.uxNotes || "",
-        uxAiSummary: details.uxAiSummary || "",
-        supportType: details.supportType || [],
-        engagementType: details.engagementType || "",
-        existingPlatform: details.existingPlatform || "",
-        supportPriority: details.supportPriority || "",
-        supportHours: details.supportHours || "",
-        accessAvailable: details.accessAvailable || [],
-        currentIssues: details.currentIssues || "",
-        supportOutcome: details.supportOutcome || "",
-        supportAiSummary: details.supportAiSummary || "",
-        overallAiSummary: details.overallAiSummary || "",
-    };
-}
-
 export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = () => {}, onNavigateSales = () => {} }) {
-    const initialLead = useMemo(() => mapLeadRecord(sourceLead), [sourceLead]);
+    const sourceDetails = sourceLead?.details || {};
+    const sourceInitialLead = {
+        ...initialLead,
+        companyName: sourceLead?.companyName || initialLead.companyName,
+        contactName: sourceDetails.contactPerson || initialLead.contactName,
+        universalCode: sourceLead?.universalId || initialLead.universalCode,
+        status: sourceDetails.leadStatus || "New",
+        assignedTo: sourceLead?.assignedTo || "Unassigned",
+        email: sourceDetails.email || "",
+        phone: sourceDetails.phone || "",
+        website: sourceDetails.website || "",
+        location: sourceDetails.address || sourceDetails.country || "Not provided",
+        category: sourceLead?.category || "Not set",
+        label: sourceLead?.label || "Normal",
+        priority: sourceLead?.label || "Normal",
+        createdAt: sourceLead?.createdAt ? new Date(sourceLead.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : initialLead.createdAt,
+        projectNeeds: sourceLead?.projectNeeds || [],
+        industry: sourceDetails.industry || "Not provided",
+        address: sourceDetails.address || "",
+        country: sourceDetails.country || "",
+    };
     const [activeTab, setActiveTab] = useState("Overview");
-    const [lead, setLead] = useState(initialLead);
-    const [draftLead, setDraftLead] = useState(initialLead);
+    const [lead, setLead] = useState(sourceInitialLead);
+    const [draftLead, setDraftLead] = useState(sourceInitialLead);
     const [isEditing, setIsEditing] = useState(false);
-    const [moreDraft, setMoreDraft] = useState(initialLead);
+    const [moreDraft, setMoreDraft] = useState(sourceInitialLead);
     const [isEditingMore, setIsEditingMore] = useState(false);
-    const [projectDraft, setProjectDraft] = useState(initialLead);
+    const [projectDraft, setProjectDraft] = useState(sourceInitialLead);
     const [isEditingProject, setIsEditingProject] = useState(false);
     const [isLeadActionsOpen, setIsLeadActionsOpen] = useState(false);
     const [modal, setModal] = useState(null);
     const [toast, setToast] = useState("");
     const [activities, setActivities] = useState(() => sourceLead ? [] : initialActivities);
-    const [notes, setNotes] = useState(() => sourceLead?.details?.notesText
-        ? [{ id: Date.now(), body: sourceLead.details.notesText, author: sourceLead.assignedTo || "Volymoly team", time: "Saved with lead" }]
-        : sourceLead ? [] : initialNotes);
+    const [notes, setNotes] = useState(() => sourceLead ? [] : initialNotes);
     const [files, setFiles] = useState(() => sourceLead ? [] : initialFiles);
     const [nextActivity, setNextActivity] = useState({ type: "Meeting", title: sourceLead?.nextActivity || "No activity scheduled", date: "Not scheduled", time: "", owner: sourceLead?.assignedTo || "Unassigned" });
     const [activityCalendarDate, setActivityCalendarDate] = useState("2026-08-03");
@@ -760,7 +853,9 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
         setIsEditing(true);
     }
     function saveEdit() {
-        setLead(draftLead);
+        const synced = syncPrimaryContact(draftLead);
+        setLead(synced);
+        setDraftLead(synced);
         setIsEditing(false);
         notify("Lead information updated");
     }
@@ -773,7 +868,9 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
         setIsEditingMore(true);
     }
     function saveMoreEdit() {
-        setLead(moreDraft);
+        const synced = syncPrimaryContact(moreDraft);
+        setLead(synced);
+        setMoreDraft(synced);
         setIsEditingMore(false);
         notify("Additional information updated");
     }
@@ -865,10 +962,10 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
                   </button>)}/>
             {isEditing ? (<div className="grid gap-4 p-5 sm:grid-cols-2">
                 <Field label="Organization name" value={draftLead.companyName} onChange={(value) => setDraftLead({ ...draftLead, companyName: value })}/>
-                <Field label="Contact Person" value={draftLead.contactName} onChange={(value) => setDraftLead({ ...draftLead, contactName: value })}/>
-                <Field label="Email" type="email" value={draftLead.email} onChange={(value) => setDraftLead({ ...draftLead, email: value })}/>
-                <Field label="Phone" type="tel" value={draftLead.phone} onChange={(value) => setDraftLead({ ...draftLead, phone: value })}/>
                 <Field label="Website" value={draftLead.website} onChange={(value) => setDraftLead({ ...draftLead, website: value })}/>
+                <div className="sm:col-span-2">
+                  <ContactPersonsEditor contacts={draftLead.contacts} onChange={(contacts) => setDraftLead(syncPrimaryContact({ ...draftLead, contacts }))}/>
+                </div>
                 <Field label="Location" value={draftLead.location} onChange={(value) => setDraftLead({ ...draftLead, location: value })}/>
                 <Field label="Industry" value={draftLead.industry} onChange={(value) => setDraftLead({ ...draftLead, industry: value })}/>
                 <SelectField label="Source Channel" value={draftLead.source} options={["Referral", "Website", "Instagram", "LinkedIn", "Cold outreach", "Other"]} onChange={(value) => setDraftLead({ ...draftLead, source: value })}/>
@@ -876,9 +973,14 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
                 <SelectField label="Priority" value={draftLead.priority} options={["High", "Medium", "Low"]} onChange={(value) => setDraftLead({ ...draftLead, priority: value })}/>
                 <SelectField label="Assigned to" value={draftLead.assignedTo} options={["Priya Sharma", "Aman Verma", "Rhea Kapoor"]} onChange={(value) => setDraftLead({ ...draftLead, assignedTo: value })}/>
               </div>) : (<div className="grid gap-x-8 gap-y-6 p-5 sm:grid-cols-2">
-                <InfoItem icon="user" label="Contact Person" value={lead.contactName}/>
-                <InfoItem icon="mail" label="Email"><a className="text-sm font-medium text-blue-600 hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a></InfoItem>
-                <InfoItem icon="phone" label="Phone"><a className="text-sm font-medium text-blue-600 hover:underline" href={`tel:${lead.phone}`}>{lead.phone}</a></InfoItem>
+                <InfoItem icon="user" label="Primary Contact" value={lead.contactName}/>
+                <InfoItem icon="users" label="Contact Persons">
+                  <button type="button" onClick={() => setActiveTab("More")} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:underline">
+                    {lead.contacts.length} contact{lead.contacts.length === 1 ? "" : "s"} linked <Icon name="external" size={12}/>
+                  </button>
+                </InfoItem>
+                <InfoItem icon="mail" label="Primary Email"><a className="text-sm font-medium text-blue-600 hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a></InfoItem>
+                <InfoItem icon="phone" label="Primary Phone"><a className="text-sm font-medium text-blue-600 hover:underline" href={`tel:${lead.phone}`}>{lead.phone}</a></InfoItem>
                 <InfoItem icon="link" label="Website"><a className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline" href="#">{lead.website}<Icon name="external" size={12}/></a></InfoItem>
                 <InfoItem icon="briefcase" label="Industry" value={lead.industry}/>
                 <InfoItem icon="document" label="Location" value={lead.location}/>
@@ -1197,7 +1299,7 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-slate-900">More Information</h2>
-            <p className="mt-1 text-sm text-slate-500">Additional organization, communication, attribution and record details collected for this lead.</p>
+            <p className="mt-1 text-sm text-slate-500">Additional organization, contact-person, attribution and record details collected for this lead.</p>
           </div>
           {isEditingMore ? (<div className="flex items-center gap-2">
               <Button variant="ghost" onClick={cancelMoreEdit}>Cancel</Button>
@@ -1229,27 +1331,20 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
               </div>)}
           </Card>
 
-          <Card>
-            <CardHeader title="Contact & Communication"/>
-            {isEditingMore ? (<div className="grid gap-4 p-5 sm:grid-cols-2">
-                <Field label="Contact person" value={current.contactName} onChange={(value) => setMoreDraft({ ...moreDraft, contactName: value })}/>
-                <Field label="Primary email" type="email" value={current.email} onChange={(value) => setMoreDraft({ ...moreDraft, email: value })}/>
-                <ListField label="Other emails" values={current.alternateEmails} onChange={(values) => setMoreDraft({ ...moreDraft, alternateEmails: values })}/>
-                <Field label="Primary phone" type="tel" value={current.phone} onChange={(value) => setMoreDraft({ ...moreDraft, phone: value })}/>
-                <ListField label="Other phones" values={current.alternatePhones} onChange={(values) => setMoreDraft({ ...moreDraft, alternatePhones: values })}/>
-                <ListField label="Preferred contact" values={current.preferredContact} onChange={(values) => setMoreDraft({ ...moreDraft, preferredContact: values })}/>
-                <div className="sm:col-span-2"><LineListField label="Social links" values={current.socialLinks} onChange={(values) => setMoreDraft({ ...moreDraft, socialLinks: values })} placeholder="Add one complete profile URL per line, e.g. https://instagram.com/brand"/></div>
-              </div>) : (<div className="px-5 py-1">
-                <DetailRow label="Contact person" value={lead.contactName}/>
-                <DetailRow label="Primary email" value={<a className="font-medium text-blue-600 hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a>}/>
-                <DetailRow label="Other emails" value={<ValueChips values={lead.alternateEmails}/>}/>
-                <DetailRow label="Primary phone" value={<a className="font-medium text-blue-600 hover:underline" href={`tel:${lead.phone}`}>{lead.phone}</a>}/>
-                <DetailRow label="Other phones" value={<ValueChips values={lead.alternatePhones}/>}/>
-                <DetailRow label="Preferred contact" value={<ValueChips values={lead.preferredContact} tone="blue"/>}/>
-                <DetailRow label="Social links" value={<SocialLinksDisplay values={lead.socialLinks}/>}/>
-              </div>)}
+          <Card className="xl:col-span-2">
+            <CardHeader title="Contact Persons"/>
+            {isEditingMore ? (<div className="p-5">
+                <ContactPersonsEditor contacts={current.contacts} onChange={(contacts) => setMoreDraft(syncPrimaryContact({ ...moreDraft, contacts }))}/>
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                  <LineListField label="Organization social links" values={current.socialLinks} onChange={(values) => setMoreDraft({ ...moreDraft, socialLinks: values })} placeholder="Add one complete profile URL per line, e.g. https://instagram.com/brand"/>
+                </div>
+              </div>) : (<>
+                <ContactPersonsDisplay contacts={lead.contacts}/>
+                <div className="border-t border-slate-100 px-5 py-1">
+                  <DetailRow label="Organization social links" value={<SocialLinksDisplay values={lead.socialLinks}/>}/>
+                </div>
+              </>)}
           </Card>
-
           <Card>
             <CardHeader title="Source & Attribution"/>
             {isEditingMore ? (<div className="grid gap-4 p-5 sm:grid-cols-2">
@@ -1333,12 +1428,28 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
         </Card>
       </div>);
     }
-  return (<SalesNavigation activeItem="leads" onNavigate={onNavigateSales} searchPlaceholder="Search leads, contacts or files" avatar="PS">
-      <main className="lead-detail-page min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#f5f7fb] text-slate-800">
+    return (<div className="min-h-screen bg-[#f5f7fb] text-slate-800">
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-[72px] flex-col items-center border-r border-[#152857] bg-[#10214b] py-4 text-white">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg font-black text-[#10214b]">v</div>
+        <div className="mt-8 w-full px-2">
+          <button onClick={() => onNavigateSales("leads")} className="flex w-full flex-col items-center gap-1.5 rounded-xl bg-blue-600 px-2 py-3 text-[10px] font-semibold shadow-lg shadow-blue-950/20"><Icon name="inbox" size={19}/>Leads</button>
+        </div>
+        <button className="mt-auto rounded-lg p-2.5 text-blue-200 hover:bg-white/10 hover:text-white"><Icon name="settings" size={19}/></button>
+      </aside>
+
+      <main className="ml-[72px] min-h-screen">
+        <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+          <div className="flex h-14 items-center justify-between gap-4 px-5 lg:px-7">
+            <div className="flex items-center gap-2 text-sm"><button onClick={onBack} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><Icon name="arrow-left" size={18}/></button><span className="font-medium text-slate-400">Leads</span><span className="text-slate-300">/</span><span className="font-semibold text-slate-700">Lead detail</span></div>
+            <div className="hidden w-full max-w-sm items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-400 md:flex"><Icon name="search" size={16}/><span className="text-xs">Search leads, contacts or files</span></div>
+            <div className="flex items-center gap-2"><button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Icon name="settings" size={18}/></button><Avatar name="Priya Sharma"/></div>
+          </div>
+        </div>
+
         <header className="border-b border-slate-200 bg-white px-5 pb-0 pt-5 lg:px-7">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0">
-              <div className="flex items-center gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-lg font-black text-white">{lead.companyName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-bold tracking-tight text-slate-950">{lead.companyName}</h1><Badge tone="green">{lead.status}</Badge></div><div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-slate-600"><span className="inline-flex items-center gap-2" title="Universal ID is system generated and locked"><Icon name="lock" size={14} className="text-slate-400"/>{lead.universalCode}</span><span className="inline-flex items-center gap-2"><Icon name="user" size={15} className="text-slate-400"/>Assigned to {lead.assignedTo}</span><span className="inline-flex items-center gap-2" title="Date created is system generated and locked"><Icon name="lock" size={14} className="text-slate-400"/>Created {lead.createdAt}</span></div></div></div>
+              <div className="flex items-center gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-lg font-black text-white">HJ</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-bold tracking-tight text-slate-950">{lead.companyName}</h1><Badge tone="green">{lead.status}</Badge></div><div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-slate-600"><span className="inline-flex items-center gap-2" title="Universal ID is system generated and locked"><Icon name="lock" size={14} className="text-slate-400"/>{lead.universalCode}</span><span className="inline-flex items-center gap-2"><Icon name="user" size={15} className="text-slate-400"/>Assigned to {lead.assignedTo}</span><span className="inline-flex items-center gap-2" title="Date created is system generated and locked"><Icon name="lock" size={14} className="text-slate-400"/>Created {lead.createdAt}</span></div></div></div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative"><select value={lead.status} onChange={(event) => { setLead({ ...lead, status: event.target.value }); notify("Lead status updated"); }} className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-9 text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">{statusOptions.map((status) => <option key={status}>{status}</option>)}</select><Icon name="chevron-down" size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"/></div>
@@ -1401,5 +1512,5 @@ export default function LeadDetail({ sourceLead, onBack = () => {}, onArchive = 
 
 
       {toast && <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500"><Icon name="check" size={13}/></span>{toast}</div>}
-    </SalesNavigation>);
+    </div>);
 }
