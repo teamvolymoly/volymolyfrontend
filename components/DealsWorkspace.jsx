@@ -217,7 +217,7 @@ function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode
         window.addEventListener("mousedown", close);
         return () => window.removeEventListener("mousedown", close);
     }, [setFilterOpen]);
-    return (<div className="relative flex min-h-[58px] shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5">
+    return (<div className="relative flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2">
       <div className="flex flex-wrap items-center gap-2">
         <ViewButton active={view === "pipeline"} icon="pipeline" label="Pipeline" onClick={() => setView("pipeline")}/>
         <ViewButton active={view === "list"} icon="list" label="List" onClick={() => setView("list")}/>
@@ -267,7 +267,7 @@ function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode
               </label>
             </div>)}
         </div>
-        <button type="button" onClick={onAddDeal} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3.5 text-sm! font-semibold leading-none text-white shadow-sm hover:bg-blue-700">
+        <button type="button" onClick={onAddDeal} className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-2 text-sm! font-semibold! leading-5! text-white shadow-sm transition-colors hover:bg-blue-700 active:bg-blue-800">
           <Icon name="plus"/> Deal
         </button>
       </div>
