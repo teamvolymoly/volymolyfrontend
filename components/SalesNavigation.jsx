@@ -124,7 +124,7 @@ export default function SalesNavigation({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-3 sm:px-4">
+        <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button type="button" data-sales-menu-toggle onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "Collapse Sales menu" : "Open Sales menu"} aria-expanded={menuOpen} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
