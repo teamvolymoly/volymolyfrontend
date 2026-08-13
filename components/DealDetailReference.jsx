@@ -444,7 +444,6 @@ function DealSnapshot({ deal, onManageProducts }) {
     <section className="deal-snapshot-card">
       <div className="snapshot-topline">
         <div>
-          <span className="snapshot-kicker">Active deal</span>
           <h2>Deal Snapshot</h2>
         </div>
         <div className="snapshot-score"><Icon name="spark" size={16} /><span>Score</span><strong>{deal.score}</strong></div>

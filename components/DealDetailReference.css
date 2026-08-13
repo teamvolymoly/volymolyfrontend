@@ -2310,7 +2310,7 @@
 .deal-detail-reference .snapshot-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .deal-detail-reference .snapshot-kicker, .deal-detail-reference .section-kicker { display: block; color: #6f7d92; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .deal-detail-reference .deal-snapshot-card .snapshot-kicker { color: rgba(255,255,255,.7); }
-.deal-detail-reference .snapshot-topline h2 { margin: 4px 0 0; font-size: 19px; letter-spacing: -.02em; }
+.deal-detail-reference .snapshot-topline h2 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -.02em; }
 .deal-detail-reference .snapshot-score { min-height: 34px; padding: 0 10px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); backdrop-filter: blur(8px); }
 .deal-detail-reference .snapshot-score span { font-size: 10px; opacity: .76; }
 .deal-detail-reference .snapshot-score strong { font-size: 13px; }
