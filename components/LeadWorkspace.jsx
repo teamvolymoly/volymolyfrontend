@@ -979,7 +979,7 @@ const columnLabels = {
     companyName: "Company Name",
     nextActivity: "Next Activity",
     projectNeeds: "Project Needs",
-    label: "Label",
+    label: "Lead Status",
     category: "Category",
     assignedTo: "Assigned to",
 };
