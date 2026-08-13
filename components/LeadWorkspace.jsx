@@ -1220,14 +1220,14 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
     return (<div className="flex min-h-0 flex-1 flex-col bg-white">
       <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2 sm:px-4">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <button type="button" onClick={() => changeMailbox("inbox")} title="Inbox" aria-label="Inbox" className={`flex h-8 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "inbox"
+          <button type="button" onClick={() => changeMailbox("inbox")} title="Inbox" aria-label="Inbox" className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "inbox"
             ? "border-blue-200 bg-blue-50 text-blue-700"
             : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 13.5h4l2 3h4l2-3h4M5.5 5h13L21 13.5V19a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 19v-5.5L5.5 5z"/>
             </svg>
           </button>
-          <button type="button" onClick={() => changeMailbox("archive")} title="Archive" aria-label="Archive" className={`flex h-8 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "archive"
+          <button type="button" onClick={() => changeMailbox("archive")} title="Archive" aria-label="Archive" className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "archive"
             ? "border-blue-200 bg-blue-50 text-blue-700"
             : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>

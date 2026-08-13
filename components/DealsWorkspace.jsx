@@ -225,9 +225,18 @@ function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode
         <ViewButton active={view === "archive"} icon="archive" label="Archive" onClick={() => setView("archive")}/>
         {view === "list" && selectedCount > 0 && (<>
           <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden="true"/>
-          <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{selectedCount} selected</span>
-          <button type="button" onClick={onArchiveSelected} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Archive selected deals"><Icon name="archive"/>Archive</button>
-          <button type="button" disabled aria-disabled="true" className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400" title="Delete is locked"><Icon name="trash"/>Delete<Icon name="lock" className="h-3.5 w-3.5"/></button>
+          <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
+            {selectedCount} selected
+          </span>
+          <button type="button" onClick={onArchiveSelected} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-xs! font-semibold! text-gray-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Archive selected deals">
+            <Icon name="archive" className="h-4 w-4"/>
+            <span className="hidden sm:inline">Archive</span>
+          </button>
+          <button type="button" disabled aria-disabled="true" className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs! font-semibold! text-gray-400" title="Delete is locked">
+            <Icon name="trash" className="h-4 w-4"/>
+            <span className="hidden sm:inline">Delete</span>
+            <Icon name="lock" className="h-3.5 w-3.5"/>
+          </button>
         </>)}
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -258,7 +267,7 @@ function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode
               </label>
             </div>)}
         </div>
-        <button type="button" onClick={onAddDeal} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3.5 text-[13px] font-semibold leading-none text-white shadow-sm hover:bg-blue-700">
+        <button type="button" onClick={onAddDeal} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-3.5 text-sm! font-semibold leading-none text-white shadow-sm hover:bg-blue-700">
           <Icon name="plus"/> Deal
         </button>
       </div>
