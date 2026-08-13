@@ -153,7 +153,7 @@ export default function SalesNavigation({
         </header>
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          {menuOpen && (<aside ref={menuRef} className="w-[272px] shrink-0 border-r border-slate-200 bg-[#fbfbfc] text-slate-800 shadow-[2px_0_8px_rgba(15,23,42,0.025)]">
+          {menuOpen && (<aside ref={menuRef} className="w-[248px] shrink-0 border-r border-slate-200 bg-[#fbfbfc] text-slate-800 shadow-[2px_0_8px_rgba(15,23,42,0.025)]">
             <nav className="space-y-1 p-3" aria-label="Sales navigation">
               {salesItems.map((item) => {
                 const active = item.id === activeItem;
