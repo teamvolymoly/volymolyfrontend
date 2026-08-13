@@ -157,7 +157,7 @@ export default function SalesNavigation({
             <nav className="space-y-1 p-3" aria-label="Sales navigation">
               {salesItems.map((item) => {
                 const active = item.id === activeItem;
-                return (<button key={item.id} type="button" onClick={() => { onNavigate(item.id); setMenuOpen(false); }} aria-current={active ? "page" : undefined} className={`flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-medium transition-colors ${active ? "bg-blue-100 text-blue-700" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"}`}>
+                return (<button key={item.id} type="button" onClick={() => { onNavigate(item.id); setMenuOpen(false); }} aria-current={active ? "page" : undefined} className={`flex h-[42px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition-colors ${active ? "bg-blue-100 text-blue-700" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"}`}>
                   <NavigationIcon name={item.icon} className={`h-[22px] w-[22px] shrink-0 ${active ? "text-blue-600" : "text-slate-500"}`}/>
                   <span className="truncate">{item.label}</span>
                 </button>);
