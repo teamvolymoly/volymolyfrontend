@@ -196,7 +196,7 @@ function SortDropdown({ value, onChange }) {
         return () => window.removeEventListener("mousedown", close);
     }, []);
     return (<div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen((current) => !current)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-[13px] font-medium leading-none text-slate-600 outline-none hover:border-blue-200 hover:text-blue-700 focus:border-blue-400" aria-haspopup="listbox" aria-expanded={open}>
+      <button type="button" onClick={() => setOpen((current) => !current)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm! font-medium leading-none text-slate-600 outline-none hover:border-blue-200 hover:text-blue-700 focus:border-blue-400" aria-haspopup="listbox" aria-expanded={open}>
         <span>Sort: {selected.label}</span>
         <Icon name="down" className="h-3.5 w-3.5 shrink-0"/>
       </button>
@@ -242,7 +242,7 @@ function Toolbar({ view, setView, onAddDeal, filterOpen, setFilterOpen, sortMode
       <div className="flex flex-wrap items-center justify-end gap-2">
         <SortDropdown value={sortMode} onChange={setSortMode}/>
         <div ref={filterRef} className="relative">
-          <button type="button" onClick={() => setFilterOpen(!filterOpen)} className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-[13px] font-semibold leading-none ${stageFilter ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"}`}>
+          <button type="button" onClick={() => setFilterOpen(!filterOpen)} className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm! font-semibold leading-none ${stageFilter ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"}`}>
             <Icon name="filter"/> Filter
           </button>
           {filterOpen && (<div className="absolute right-0 top-11 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
