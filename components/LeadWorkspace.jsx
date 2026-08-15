@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import LeadDetail from "./LeadDetail";
 import DealsWorkspace from "./DealsWorkspace";
 import PeopleWorkspace from "./PeopleWorkspace";
+import OrganizationsWorkspace from "./OrganizationsWorkspace";
 import SalesNavigation from "./SalesNavigation";
 function MultiSelect({ options, selected, onChange, placeholder = "Select options…" }) {
     const [open, setOpen] = useState(false);
@@ -1497,6 +1498,9 @@ export default function App() {
     }
     if (view === "people") {
         return <PeopleWorkspace onNavigateSales={navigateSales}/>;
+    }
+    if (view === "organizations") {
+        return <OrganizationsWorkspace onNavigateSales={navigateSales}/>;
     }
     if (view === "detail" && detailLead) {
         return (<LeadDetailPage lead={detailLead} onBack={returnToList} onArchive={(leadId) => setArchivedForLeads([leadId], true)} onNavigateSales={navigateSales}/>);

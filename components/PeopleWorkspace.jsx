@@ -22,6 +22,8 @@ const columns = [
     { id: "owner", label: "Owner", width: 150 },
 ];
 
+const defaultColumnWidths = Object.fromEntries(columns.map((column) => [column.id, column.width]));
+
 function Icon({ name, className = "h-4 w-4" }) {
     const common = { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 1.9 };
     if (name === "plus")
@@ -76,6 +78,19 @@ function getStoredPeople() {
     }
     catch {
         return initialPeople;
+    }
+}
+
+function getStoredColumnWidths() {
+    if (typeof window === "undefined")
+        return defaultColumnWidths;
+    try {
+        const stored = window.localStorage.getItem("volymoly-people-column-widths-v1");
+        const parsed = stored ? JSON.parse(stored) : null;
+        return Object.fromEntries(columns.map((column) => [column.id, typeof parsed?.[column.id] === "number" ? parsed[column.id] : column.width]));
+    }
+    catch {
+        return defaultColumnWidths;
     }
 }
 
@@ -163,6 +178,7 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
     const [editingPerson, setEditingPerson] = useState(null);
     const [toast, setToast] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(() => columns.map((column) => column.id));
+    const [columnWidths, setColumnWidths] = useState(defaultColumnWidths);
     const [filters, setFilters] = useState({ organization: "", owner: "", dealState: "all" });
     const toolbarRef = useRef(null);
 
@@ -170,12 +186,17 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
         // Restore browser-only records after hydration.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setPeople(getStoredPeople());
+        setColumnWidths(getStoredColumnWidths());
         setHydrated(true);
     }, []);
     useEffect(() => {
         if (hydrated)
             window.localStorage.setItem("volymoly-people-v1", JSON.stringify(people));
     }, [people, hydrated]);
+    useEffect(() => {
+        if (hydrated)
+            window.localStorage.setItem("volymoly-people-column-widths-v1", JSON.stringify(columnWidths));
+    }, [columnWidths, hydrated]);
     useEffect(() => {
         const closeMenus = (event) => {
             if (toolbarRef.current?.contains(event.target))
@@ -213,7 +234,7 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
     const someSelected = visibleIds.some((id) => selectedIds.includes(id)) && !allSelected;
     const activeFilterCount = [filters.organization, filters.owner, filters.dealState !== "all" ? filters.dealState : ""].filter(Boolean).length;
     const activeColumns = columns.filter((column) => visibleColumns.includes(column.id));
-    const tableWidth = activeColumns.reduce((total, column) => total + column.width, 100);
+    const tableWidth = activeColumns.reduce((total, column) => total + columnWidths[column.id], 100);
 
     const toggleAll = () => setSelectedIds((current) => allSelected ? current.filter((id) => !visibleIds.includes(id)) : [...new Set([...current, ...visibleIds])]);
     const toggleSelected = (id) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -229,6 +250,24 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
         setPeople((current) => current.map((person) => selected.has(person.id) ? { ...person, archived: mailbox !== "archive" } : person));
         setSelectedIds([]);
         setToast(mailbox === "archive" ? "People restored" : "People archived");
+    };
+    const startColumnResize = (event, columnId) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const startX = event.clientX;
+        const startWidth = columnWidths[columnId];
+        const handlePointerMove = (moveEvent) => {
+            const nextWidth = Math.min(600, Math.max(110, startWidth + moveEvent.clientX - startX));
+            setColumnWidths((current) => ({ ...current, [columnId]: nextWidth }));
+        };
+        const stopColumnResize = () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", stopColumnResize);
+            window.removeEventListener("pointercancel", stopColumnResize);
+        };
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", stopColumnResize);
+        window.addEventListener("pointercancel", stopColumnResize);
     };
     const openNewPerson = () => { setEditingPerson(null); setModalOpen(true); };
     const savePerson = (person) => {
@@ -340,10 +379,10 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
 
         <div data-sales-menu-keep-open className="min-h-0 flex-1 overflow-auto bg-white">
           <table className="table-fixed border-collapse text-left" style={{ width: tableWidth }}>
-            <colgroup><col style={{ width: 44 }}/>{activeColumns.map((column) => <col key={column.id} style={{ width: column.width }}/>)}<col style={{ width: 56 }}/></colgroup>
+            <colgroup><col style={{ width: 44 }}/>{activeColumns.map((column) => <col key={column.id} style={{ width: columnWidths[column.id] }}/>)}<col style={{ width: 56 }}/></colgroup>
             <thead className="sticky top-0 z-20 bg-[#f8faff] shadow-[0_1px_0_#e5e7eb]"><tr>
               <th className="h-10 border-r border-gray-200 px-3 text-center"><Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} label="Select all visible people"/></th>
-              {activeColumns.map((column) => <th key={column.id} className={`h-10 border-r border-gray-200 px-3 text-xs font-semibold text-gray-600 ${column.id === "closedDeals" || column.id === "openDeals" ? "text-right" : ""}`}><span className="inline-flex items-center gap-1.5">{column.label}<svg className="h-3 w-3 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><circle cx="6" cy="6" r="1.2"/><circle cx="14" cy="6" r="1.2"/><circle cx="6" cy="14" r="1.2"/><circle cx="14" cy="14" r="1.2"/></svg></span></th>)}
+              {activeColumns.map((column) => <th key={column.id} className={`relative h-10 select-none border-r border-gray-200 px-3 text-xs font-semibold text-gray-600 ${column.id === "closedDeals" || column.id === "openDeals" ? "text-right" : ""}`}><span className="inline-flex items-center gap-1.5">{column.label}<svg className="h-3 w-3 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><circle cx="6" cy="6" r="1.2"/><circle cx="14" cy="6" r="1.2"/><circle cx="6" cy="14" r="1.2"/><circle cx="14" cy="14" r="1.2"/></svg></span><span role="separator" aria-orientation="vertical" aria-label={`Resize ${column.label} column`} onPointerDown={(event) => startColumnResize(event, column.id)} className="absolute -right-1 top-0 z-30 h-full w-2 cursor-col-resize touch-none hover:bg-blue-400/60" title="Drag to resize column"/></th>)}
               <th className="relative h-10 border-l border-gray-200 px-1 text-center">
                 <button type="button" onClick={() => { setSettingsOpen((open) => !open); setFilterOpen(false); setMoreOpen(false); }} className="mx-auto flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-700" title="Table settings" aria-label="Table settings"><Icon name="settings"/></button>
                 {settingsOpen && <div className="absolute right-2 top-10 z-50 w-56 rounded-xl border border-gray-200 bg-white p-2 text-left shadow-xl" onPointerDown={(event) => event.stopPropagation()}><p className="px-2 pb-2 pt-1 text-xs font-bold text-gray-900">Visible columns</p>{columns.map((column) => { const visible = visibleColumns.includes(column.id); return <button key={column.id} type="button" onClick={() => setVisibleColumns((current) => visible ? (current.length > 1 ? current.filter((id) => id !== column.id) : current) : [...current, column.id])} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-gray-700 hover:bg-blue-50"><span className={`flex h-4 w-4 items-center justify-center rounded border ${visible ? "border-blue-600 bg-blue-600 text-white" : "border-gray-300 bg-white"}`}>{visible && <Icon name="check" className="h-3 w-3"/>}</span>{column.label}</button>; })}</div>}
