@@ -1287,7 +1287,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
                     moveColumn(draggedColumn, column);
                 setDraggedColumn(null);
             }} className={`relative h-10 cursor-grab select-none border-r border-gray-200 px-3 text-xs font-semibold text-gray-600 transition-colors active:cursor-grabbing ${draggedColumn === column ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50/70"}`} title="Drag to reorder this column">
-                  <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-2">
                     {columnLabels[column]}
                     <svg className="h-3 w-3 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.2"/>
