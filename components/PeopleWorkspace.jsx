@@ -154,6 +154,7 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
     const [hydrated, setHydrated] = useState(false);
     const [search, setSearch] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
+    const [mailbox, setMailbox] = useState("inbox");
     const [filterOpen, setFilterOpen] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -199,13 +200,14 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
     const filteredPeople = useMemo(() => {
         const query = search.trim().toLowerCase();
         return people.filter((person) => {
+            const matchesMailbox = mailbox === "archive" ? Boolean(person.archived) : !person.archived;
             const matchesSearch = !query || [person.name, person.organization, person.email, person.phone, person.owner].some((value) => String(value ?? "").toLowerCase().includes(query));
             const matchesOrganization = !filters.organization || person.organization === filters.organization;
             const matchesOwner = !filters.owner || person.owner === filters.owner;
             const matchesDeals = filters.dealState === "all" || (filters.dealState === "open" ? person.openDeals > 0 : person.openDeals === 0);
-            return matchesSearch && matchesOrganization && matchesOwner && matchesDeals;
+            return matchesMailbox && matchesSearch && matchesOrganization && matchesOwner && matchesDeals;
         });
-    }, [people, search, filters]);
+    }, [people, search, filters, mailbox]);
     const visibleIds = filteredPeople.map((person) => person.id);
     const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
     const someSelected = visibleIds.some((id) => selectedIds.includes(id)) && !allSelected;
@@ -215,6 +217,19 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
 
     const toggleAll = () => setSelectedIds((current) => allSelected ? current.filter((id) => !visibleIds.includes(id)) : [...new Set([...current, ...visibleIds])]);
     const toggleSelected = (id) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+    const changeMailbox = (nextMailbox) => {
+        setMailbox(nextMailbox);
+        setSelectedIds([]);
+        setRowMenu(null);
+    };
+    const archiveSelected = () => {
+        if (!selectedIds.length)
+            return;
+        const selected = new Set(selectedIds);
+        setPeople((current) => current.map((person) => selected.has(person.id) ? { ...person, archived: mailbox !== "archive" } : person));
+        setSelectedIds([]);
+        setToast(mailbox === "archive" ? "People restored" : "People archived");
+    };
     const openNewPerson = () => { setEditingPerson(null); setModalOpen(true); };
     const savePerson = (person) => {
         if (person.id)
@@ -264,13 +279,41 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
 
     return (<SalesNavigation activeItem="people" onNavigate={onNavigateSales} searchPlaceholder="Search people, organizations or emails" searchValue={search} onSearchChange={setSearch} avatar="PS">
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        <div ref={toolbarRef} className="relative flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2 sm:px-4">
+        <div ref={toolbarRef} data-sales-menu-keep-open className="relative flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2 sm:px-4">
           <div className="flex items-center gap-2">
-            <button type="button" onClick={openNewPerson} className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 active:bg-blue-800"><Icon name="plus"/> Person</button>
-            {selectedIds.length > 0 && <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{selectedIds.length} selected</span>}
+            <button type="button" onClick={() => changeMailbox("inbox")} title="Inbox" aria-label="Inbox" className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "inbox" ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 13.5h4l2 3h4l2-3h4M5.5 5h13L21 13.5V19a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 19v-5.5L5.5 5z"/>
+              </svg>
+            </button>
+            <button type="button" onClick={() => changeMailbox("archive")} title="Archive" aria-label="Archive" className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "archive" ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M5 7l1 13h12l1-13M3.5 3.5h17v3.5h-17zM9 11h6"/>
+              </svg>
+            </button>
+            {selectedIds.length > 0 && (<>
+              <span className="mx-1 h-5 w-px bg-gray-200" aria-hidden="true"/>
+              <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{selectedIds.length} selected</span>
+              <button type="button" onClick={archiveSelected} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-semibold text-gray-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title={mailbox === "archive" ? "Restore selected people" : "Archive selected people"}>
+                {mailbox === "archive" ? (<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M5.5 15a7 7 0 101.6-8"/>
+                  </svg>) : (<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M5 7l1 13h12l1-13M3.5 3.5h17v3.5h-17zM9 11h6"/>
+                  </svg>)}
+                <span className="hidden sm:inline">{mailbox === "archive" ? "Restore" : "Archive"}</span>
+              </button>
+              <button type="button" disabled aria-disabled="true" className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-400" title="Delete is locked">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5"/>
+                </svg>
+                <span className="hidden sm:inline">Delete</span>
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 10V8a5 5 0 0110 0v2m-11 0h12a1 1 0 011 1v9H5v-9a1 1 0 011-1z"/>
+                </svg>
+              </button>
+            </>)}
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden items-center gap-1.5 text-xs font-semibold text-gray-600 sm:inline-flex"><Icon name="refresh" className="h-3.5 w-3.5"/>{filteredPeople.length} {filteredPeople.length === 1 ? "person" : "people"}</span>
             <div className="relative">
               <button type="button" onClick={() => { setFilterOpen((open) => !open); setMoreOpen(false); setSettingsOpen(false); }} className={`inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-semibold transition-colors ${activeFilterCount ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}><Icon name="filter"/>{activeFilterCount ? `Filter (${activeFilterCount})` : "Filter"}</button>
               {filterOpen && <div className="absolute right-0 top-11 z-50 w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl" onPointerDown={(event) => event.stopPropagation()}>
@@ -286,10 +329,16 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
                 {moreItems.map(([label, icon], index) => <div key={label}>{index === 3 && <div className="my-1 border-t border-gray-100"/>}<button type="button" onClick={() => runMoreAction(label)} className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700"><Icon name={icon} className="h-4 w-4 shrink-0"/>{label}</button></div>)}
               </div>}
             </div>
+            <button type="button" onClick={openNewPerson} className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 active:bg-blue-800">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14"/>
+              </svg>
+              Person
+            </button>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-auto bg-white">
+        <div data-sales-menu-keep-open className="min-h-0 flex-1 overflow-auto bg-white">
           <table className="table-fixed border-collapse text-left" style={{ width: tableWidth }}>
             <colgroup><col style={{ width: 44 }}/>{activeColumns.map((column) => <col key={column.id} style={{ width: column.width }}/>)}<col style={{ width: 56 }}/></colgroup>
             <thead className="sticky top-0 z-20 bg-[#f8faff] shadow-[0_1px_0_#e5e7eb]"><tr>
