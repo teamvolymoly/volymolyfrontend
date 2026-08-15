@@ -318,7 +318,7 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
 
     return (<SalesNavigation activeItem="people" onNavigate={onNavigateSales} searchPlaceholder="Search people, organizations or emails" searchValue={search} onSearchChange={setSearch} avatar="PS">
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        <div ref={toolbarRef} data-sales-menu-keep-open className="relative flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2 sm:px-4">
+        <div ref={toolbarRef} className="relative flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2 sm:px-4">
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => changeMailbox("inbox")} title="Inbox" aria-label="Inbox" className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "inbox" ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
@@ -378,7 +378,7 @@ export default function PeopleWorkspace({ onNavigateSales = () => {} }) {
         </div>
 
         <div data-sales-menu-keep-open className="min-h-0 flex-1 overflow-auto bg-white">
-          <table className="table-fixed border-collapse text-left" style={{ width: tableWidth }}>
+          <table className="min-w-full table-fixed border-collapse text-left" style={{ width: tableWidth }}>
             <colgroup><col style={{ width: 44 }}/>{activeColumns.map((column) => <col key={column.id} style={{ width: columnWidths[column.id] }}/>)}<col style={{ width: 56 }}/></colgroup>
             <thead className="sticky top-0 z-20 bg-[#f8faff] shadow-[0_1px_0_#e5e7eb]"><tr>
               <th className="h-10 border-r border-gray-200 px-3 text-center"><Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} label="Select all visible people"/></th>
