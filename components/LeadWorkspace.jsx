@@ -1221,7 +1221,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
     };
     return (<div className="flex min-h-0 flex-1 flex-col bg-white">
       <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2 sm:px-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <button type="button" onClick={() => changeMailbox("inbox")} title="Inbox" aria-label="Inbox" className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${mailbox === "inbox"
             ? "border-blue-200 bg-blue-50 text-blue-700"
             : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}>
@@ -1287,7 +1287,7 @@ function LeadsPage({ leads, onAddLead, onOpenLead, onBulkArchive, onBulkRestore,
                     moveColumn(draggedColumn, column);
                 setDraggedColumn(null);
             }} className={`relative h-10 cursor-grab select-none border-r border-gray-200 px-3 text-xs font-semibold text-gray-600 transition-colors active:cursor-grabbing ${draggedColumn === column ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50/70"}`} title="Drag to reorder this column">
-                  <span className="inline-flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5">
                     {columnLabels[column]}
                     <svg className="h-3 w-3 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                       <circle cx="6" cy="6" r="1.2"/>
